@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1C1B774C2F122CD900D185F2 /* XCLogParser in Frameworks */ = {isa = PBXBuildFile; productRef = 1C1B774B2F122CD900D185F2 /* XCLogParser */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1C1B772E2F122C0100D185F2 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1C1B774C2F122CD900D185F2 /* XCLogParser in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = BuildSignal;
 			packageProductDependencies = (
+				1C1B774B2F122CD900D185F2 /* XCLogParser */,
 			);
 			productName = BuildSignal;
 			productReference = 1C1B77202F122BFF00D185F2 /* BuildSignal.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = 1C1B77172F122BFF00D185F2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1C1B774A2F122CD900D185F2 /* XCRemoteSwiftPackageReference "XCLogParser" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1C1B77212F122BFF00D185F2 /* Products */;
 			projectDirPath = "";
@@ -617,6 +626,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1C1B774A2F122CD900D185F2 /* XCRemoteSwiftPackageReference "XCLogParser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "git@github.com:MobileNativeFoundation/XCLogParser.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.15;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1C1B774B2F122CD900D185F2 /* XCLogParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1C1B774A2F122CD900D185F2 /* XCRemoteSwiftPackageReference "XCLogParser" */;
+			productName = XCLogParser;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1C1B77182F122BFF00D185F2 /* Project object */;
 }
