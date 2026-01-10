@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1C1B774C2F122CD900D185F2 /* XCLogParser in Frameworks */ = {isa = PBXBuildFile; productRef = 1C1B774B2F122CD900D185F2 /* XCLogParser */; };
+		1C1B774D2F122CE000D185F3 /* WelcomeWindow in Frameworks */ = {isa = PBXBuildFile; productRef = 1C1B774E2F122CE000D185F3 /* WelcomeWindow */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1C1B774C2F122CD900D185F2 /* XCLogParser in Frameworks */,
+				1C1B774D2F122CE000D185F3 /* WelcomeWindow in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +120,7 @@
 			name = BuildSignal;
 			packageProductDependencies = (
 				1C1B774B2F122CD900D185F2 /* XCLogParser */,
+				1C1B774E2F122CE000D185F3 /* WelcomeWindow */,
 			);
 			productName = BuildSignal;
 			productReference = 1C1B77202F122BFF00D185F2 /* BuildSignal.app */;
@@ -203,6 +206,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				1C1B774A2F122CD900D185F2 /* XCRemoteSwiftPackageReference "XCLogParser" */,
+				1C1B774F2F122CE000D185F3 /* XCRemoteSwiftPackageReference "WelcomeWindow" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1C1B77212F122BFF00D185F2 /* Products */;
@@ -636,6 +640,14 @@
 				minimumVersion = 0.2.15;
 			};
 		};
+		1C1B774F2F122CE000D185F3 /* XCRemoteSwiftPackageReference "WelcomeWindow" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/CodeEditApp/WelcomeWindow.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -643,6 +655,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 1C1B774A2F122CD900D185F2 /* XCRemoteSwiftPackageReference "XCLogParser" */;
 			productName = XCLogParser;
+		};
+		1C1B774E2F122CE000D185F3 /* WelcomeWindow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1C1B774F2F122CE000D185F3 /* XCRemoteSwiftPackageReference "WelcomeWindow" */;
+			productName = WelcomeWindow;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

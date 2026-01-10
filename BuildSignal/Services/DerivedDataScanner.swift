@@ -100,7 +100,7 @@ actor DerivedDataScanner {
     }
 
     /// Parses a single project folder and extracts metadata.
-    private func parseProject(at folderURL: URL) async -> XcodeProject? {
+    func parseProject(at folderURL: URL) async -> XcodeProject? {
         let infoPlistURL = folderURL.appendingPathComponent("info.plist")
         let logManifestURL = folderURL
             .appendingPathComponent("Logs/Build/LogStoreManifest.plist")

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 /// Represents an Xcode project discovered in DerivedData.
@@ -49,5 +50,51 @@ struct XcodeProject: Identifiable, Hashable {
     /// Total errors across all builds (for the latest build)
     var totalErrors: Int {
         latestBuild?.errorCount ?? 0
+    }
+
+    /// Path to the first .app bundle found in Build/Products
+    var appBundlePath: URL? {
+        let productsPath = derivedDataPath.appendingPathComponent("Build/Products")
+        let fileManager = FileManager.default
+
+        guard fileManager.fileExists(atPath: productsPath.path) else { return nil }
+
+        // Search through product configurations (Debug-iphonesimulator, Release-iphoneos, Debug, etc.)
+        guard let configurations = try? fileManager.contentsOfDirectory(
+            at: productsPath,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return nil }
+
+        // Prefer Debug configurations, then any configuration
+        let sortedConfigs = configurations.sorted { url1, url2 in
+            let name1 = url1.lastPathComponent
+            let name2 = url2.lastPathComponent
+            // Prioritize Debug builds
+            if name1.hasPrefix("Debug") && !name2.hasPrefix("Debug") { return true }
+            if !name1.hasPrefix("Debug") && name2.hasPrefix("Debug") { return false }
+            return name1 < name2
+        }
+
+        for configURL in sortedConfigs {
+            if let apps = try? fileManager.contentsOfDirectory(
+                at: configURL,
+                includingPropertiesForKeys: nil,
+                options: [.skipsHiddenFiles]
+            ) {
+                // Find the first .app bundle
+                if let appBundle = apps.first(where: { $0.pathExtension == "app" }) {
+                    return appBundle
+                }
+            }
+        }
+
+        return nil
+    }
+
+    /// The app icon from the built .app bundle, if available
+    var appIcon: NSImage? {
+        guard let appPath = appBundlePath else { return nil }
+        return NSWorkspace.shared.icon(forFile: appPath.path)
     }
 }
