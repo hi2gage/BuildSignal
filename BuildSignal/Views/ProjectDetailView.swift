@@ -19,6 +19,13 @@ struct ProjectDetailView: View {
                     Label("Overview", systemImage: "info.circle")
                 }
 
+            // Warnings List Tab
+            WarningsListView(warnings: viewModel.warnings)
+                .tabItem {
+                    Label("Warnings", systemImage: "exclamationmark.triangle")
+                }
+                .badge(viewModel.warnings.count)
+
             // Raw JSON Tab
             RawJSONTabView(viewModel: viewModel)
                 .tabItem {

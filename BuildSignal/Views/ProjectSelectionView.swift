@@ -130,6 +130,7 @@ struct ProjectSelectionView: View {
     private var detailContent: some View {
         if let project = viewModel.selectedProject {
             ProjectDetailView(project: project)
+                .id(project.id) // Force view recreation when project changes
         } else {
             ContentUnavailableView {
                 Label("Select a Project", systemImage: "sidebar.left")
