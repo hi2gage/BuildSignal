@@ -2,7 +2,7 @@ import SwiftUI
 import XCLogParser
 
 /// A wrapper to give each warning a stable ID
-private struct IdentifiedWarning: Identifiable {
+private struct IdentifiedWarning: Identifiable, Hashable {
     let id: String
     let warning: Notice
 
@@ -11,15 +11,25 @@ private struct IdentifiedWarning: Identifiable {
         self.id = "\(warning.documentURL):\(warning.startingLineNumber):\(warning.title.prefix(50)):\(index)"
         self.warning = warning
     }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+
+    static func == (lhs: IdentifiedWarning, rhs: IdentifiedWarning) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 /// Displays a list of warnings with grouping and filtering options.
 struct WarningsListView: View {
     let warnings: [Notice]
-    @State private var groupBy: GroupingOption = .file
+    @State private var groupBy: GroupingOption = .message
     @State private var searchText = ""
+    @State private var selectedIDs: Set<String> = []
 
     enum GroupingOption: String, CaseIterable {
+        case message = "Message"
         case file = "File"
         case type = "Type"
         case none = "None"
@@ -38,6 +48,26 @@ struct WarningsListView: View {
                 warningsList
             }
         }
+        .copyable(copySelectedWarningsText())
+        .onDeleteCommand {
+            selectedIDs.removeAll()
+        }
+    }
+
+    private func copySelectedWarningsText() -> [String] {
+        guard !selectedIDs.isEmpty else { return [] }
+
+        let selectedWarnings = filteredWarnings.enumerated()
+            .filter { selectedIDs.contains(IdentifiedWarning($0.element, index: $0.offset).id) }
+            .map { $0.element }
+
+        let text = selectedWarnings.map { warning in
+            let file = extractFileName(from: warning.documentURL)
+            let line = warning.startingLineNumber > 0 ? ":\(warning.startingLineNumber)" : ""
+            return "\(file)\(line): \(warning.title)"
+        }.joined(separator: "\n")
+
+        return [text]
     }
 
     // MARK: - Toolbar
@@ -48,7 +78,7 @@ struct WarningsListView: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField("Search warnings...", text: $searchText)
+                TextField("Search...", text: $searchText)
                     .textFieldStyle(.plain)
                 if !searchText.isEmpty {
                     Button {
@@ -63,6 +93,14 @@ struct WarningsListView: View {
             .padding(8)
             .background(.quaternary)
             .cornerRadius(8)
+            .frame(maxWidth: 200)
+
+            // Selection info
+            if !selectedIDs.isEmpty {
+                Text("\(selectedIDs.count) selected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 
@@ -73,7 +111,8 @@ struct WarningsListView: View {
                 }
             }
             .pickerStyle(.segmented)
-            .frame(width: 200)
+            .labelsHidden()
+            .frame(width: 300)
 
             // Count
             Text("\(filteredWarnings.count) warnings")
@@ -86,19 +125,69 @@ struct WarningsListView: View {
     // MARK: - Warnings List
 
     private var warningsList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                switch groupBy {
-                case .file:
-                    groupedByFileContent
-                case .type:
-                    groupedByTypeContent
-                case .none:
-                    flatListContent
-                }
+        List(selection: $selectedIDs) {
+            switch groupBy {
+            case .message:
+                groupedByMessageContent
+            case .file:
+                groupedByFileContent
+            case .type:
+                groupedByTypeContent
+            case .none:
+                flatListContent
             }
         }
-        .background(Color(nsColor: .textBackgroundColor))
+        .listStyle(.inset)
+    }
+
+    // MARK: - Grouped by Message
+
+    private var groupedByMessageContent: some View {
+        ForEach(sortedMessageGroups, id: \.message) { group in
+            Section {
+                ForEach(group.identifiedWarnings) { item in
+                    WarningRow(warning: item.warning, showFile: true)
+                        .tag(item.id)
+                }
+            } header: {
+                messageHeader(
+                    message: group.message,
+                    type: group.type,
+                    count: group.identifiedWarnings.count,
+                    ids: Set(group.identifiedWarnings.map(\.id))
+                )
+            }
+        }
+    }
+
+    private func messageHeader(message: String, type: NoticeType, count: Int, ids: Set<String>) -> some View {
+        let allSelected = ids == selectedIDs
+        return Button {
+            selectedIDs = ids
+        } label: {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: iconForType(type))
+                    .foregroundStyle(colorForType(type))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(message)
+                        .font(.headline)
+                        .lineLimit(2)
+                }
+                Spacer()
+                Text("\(count)")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(colorForType(type).opacity(0.3))
+                    .cornerRadius(6)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .background(allSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+            .background(.bar)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Grouped by File
@@ -108,14 +197,15 @@ struct WarningsListView: View {
             Section {
                 ForEach(group.identifiedWarnings) { item in
                     WarningRow(warning: item.warning, showFile: false)
-                    Divider().padding(.leading, 44)
+                        .tag(item.id)
                 }
             } header: {
                 sectionHeader(
                     icon: "doc.text",
                     title: group.file,
                     count: group.identifiedWarnings.count,
-                    color: .yellow
+                    color: .yellow,
+                    ids: Set(group.identifiedWarnings.map(\.id))
                 )
             }
         }
@@ -128,14 +218,15 @@ struct WarningsListView: View {
             Section {
                 ForEach(group.identifiedWarnings) { item in
                     WarningRow(warning: item.warning, showFile: true)
-                    Divider().padding(.leading, 44)
+                        .tag(item.id)
                 }
             } header: {
                 sectionHeader(
                     icon: iconForType(group.type),
                     title: labelForType(group.type),
                     count: group.identifiedWarnings.count,
-                    color: colorForType(group.type)
+                    color: colorForType(group.type),
+                    ids: Set(group.identifiedWarnings.map(\.id))
                 )
             }
         }
@@ -146,29 +237,36 @@ struct WarningsListView: View {
     private var flatListContent: some View {
         ForEach(identifiedFilteredWarnings) { item in
             WarningRow(warning: item.warning, showFile: true)
-            Divider().padding(.leading, 44)
+                .tag(item.id)
         }
     }
 
     // MARK: - Section Header
 
-    private func sectionHeader(icon: String, title: String, count: Int, color: Color) -> some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-            Text(title)
-                .font(.headline)
-            Spacer()
-            Text("\(count)")
-                .font(.caption)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(color.opacity(0.3))
-                .cornerRadius(4)
+    private func sectionHeader(icon: String, title: String, count: Int, color: Color, ids: Set<String>) -> some View {
+        let allSelected = ids == selectedIDs
+        return Button {
+            selectedIDs = ids
+        } label: {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundStyle(.secondary)
+                Text(title)
+                    .font(.headline)
+                Spacer()
+                Text("\(count)")
+                    .font(.caption)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(color.opacity(0.3))
+                    .cornerRadius(4)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(allSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+            .background(.bar)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(.bar)
+        .buttonStyle(.plain)
     }
 
     // MARK: - Empty States
@@ -203,6 +301,24 @@ struct WarningsListView: View {
 
     private var identifiedFilteredWarnings: [IdentifiedWarning] {
         filteredWarnings.enumerated().map { IdentifiedWarning($0.element, index: $0.offset) }
+    }
+
+    private var sortedMessageGroups: [(message: String, type: NoticeType, identifiedWarnings: [IdentifiedWarning])] {
+        let grouped = Dictionary(grouping: filteredWarnings.enumerated().map { ($0.offset, $0.element) }) {
+            $0.1.title
+        }
+        return grouped
+            .map { key, value in
+                let warnings = value.map { IdentifiedWarning($0.1, index: $0.0) }
+                let type = value.first?.1.type ?? .swiftWarning
+                return (message: key, type: type, identifiedWarnings: warnings)
+            }
+            .sorted {
+                if $0.identifiedWarnings.count != $1.identifiedWarnings.count {
+                    return $0.identifiedWarnings.count > $1.identifiedWarnings.count
+                }
+                return $0.message < $1.message
+            }
     }
 
     private var sortedFileGroups: [(file: String, identifiedWarnings: [IdentifiedWarning])] {
@@ -295,6 +411,7 @@ private struct WarningRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
+            // Warning icon
             Image(systemName: iconForType(warning.type))
                 .foregroundStyle(colorForType(warning.type))
                 .font(.title3)
@@ -322,9 +439,7 @@ private struct WarningRow: View {
 
             Spacer()
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .contentShape(Rectangle())
+        .padding(.vertical, 4)
     }
 
     private var fileName: String {
