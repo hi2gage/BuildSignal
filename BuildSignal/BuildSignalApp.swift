@@ -11,7 +11,12 @@ import SwiftUI
 struct BuildSignalApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ProjectSelectionView()
+        }
+        .windowStyle(.automatic)
+        .defaultSize(width: 900, height: 600)
+        .commands {
+            SidebarCommands()
         }
     }
 }
