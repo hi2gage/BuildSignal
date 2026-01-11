@@ -29,7 +29,14 @@ public class APIClient {
     public init() {}
 
     public func makeRequest() async {
-        // Deprecated API usage
+        // Shared deprecated APIs
+        DeprecatedNetworkClient.shared.fetch("/api/request")
+        DeprecatedNetworkClient.shared.post("/api/data", data: [:])
+        DeprecatedUnsafeStorage.shared.save("api_cache", value: [:])
+        DeprecatedPrintLogger.shared.log("Making API request")
+        let _ = deprecatedSanitizeString("input")
+
+        // Local deprecated API usage
         let legacy = LegacyHTTPClient()
         let _ = legacy.fetch()
 
@@ -56,6 +63,14 @@ public class APIClient {
 
         // No async in await
         let _ = await syncFunction()
+
+        _ = (config1, config2, config3)
+    }
+
+    public func authenticate() {
+        let _ = DeprecatedPasswordAuth.shared.authenticate(password: "api")
+        DeprecatedTokenManager.shared.setToken("api_token")
+        let _ = DeprecatedTokenManager.shared.getToken()
     }
 
     private func syncFunction() -> Int { 42 }

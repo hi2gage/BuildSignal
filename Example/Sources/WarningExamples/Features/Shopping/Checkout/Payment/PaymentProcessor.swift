@@ -41,7 +41,15 @@ public class payment_processor: LegacyPaymentHandler {
     }
 
     public func chargeCard() async {
-        // Deprecated
+        // Shared deprecated APIs
+        DeprecatedNetworkClient.shared.fetch("/api/payment")
+        DeprecatedNetworkClient.shared.post("/api/payment/charge", data: [:])
+        DeprecatedUnsafeStorage.shared.save("payment", value: [:])
+        DeprecatedPrintLogger.shared.log("Processing payment")
+        DeprecatedTokenManager.shared.setToken("payment_token")
+        let _ = DeprecatedPasswordAuth.shared.authenticate(password: "pay")
+
+        // Local deprecated
         let handler: LegacyPaymentHandler = payment_processor()
         handler.processLegacy(99.99)
 
@@ -68,10 +76,13 @@ public class payment_processor: LegacyPaymentHandler {
         // Force unwrap
         let opt: String? = "4242"
         print(opt!)
+
+        _ = (token1, token2, token3)
     }
 
     // Unused params
     public func refund(transactionId: String, amount: Double, reason: String, metadata: [String: Any]) {
+        DeprecatedCacheManager.shared.store("refund")
         print("refunding")
     }
 

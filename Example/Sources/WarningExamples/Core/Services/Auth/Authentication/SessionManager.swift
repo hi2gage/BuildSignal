@@ -46,7 +46,14 @@ public class SESSION_MANAGER {
     public init() {}
 
     public func createSession() async {
-        // Deprecated
+        // Shared deprecated APIs
+        DeprecatedNetworkClient.shared.fetch("/api/session")
+        DeprecatedUnsafeStorage.shared.save("session", value: [:])
+        DeprecatedPrintLogger.shared.log("Creating session")
+        DeprecatedTokenManager.shared.setToken("session_token")
+        let _ = DeprecatedPasswordAuth.shared.authenticate(password: "session")
+
+        // Local deprecated
         let session1 = LegacySession(id: UUID(), userId: 1)
         let session2 = LegacySession(id: UUID(), userId: 2)
 
@@ -71,10 +78,12 @@ public class SESSION_MANAGER {
         }
 
         print(session1.userId, session2.userId)
+        _ = (config1, config2, config3)
     }
 
     // Unused params
     public func validateSession(id: UUID, userId: Int, timestamp: Date, ip: String) -> Bool {
+        DeprecatedCacheManager.shared.store("validation")
         return true
     }
 

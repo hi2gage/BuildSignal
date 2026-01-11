@@ -8,6 +8,22 @@ public class ChatView {
 
     public init() {}
 
+    // MARK: - Shared Deprecated API Usage
+    public func loadMessages() {
+        DeprecatedNetworkClient.shared.fetch("/api/messages")
+        DeprecatedNetworkClient.shared.fetch("/api/messages/recent")
+        DeprecatedUnsafeStorage.shared.save("messages", value: [:])
+        DeprecatedPrintLogger.shared.log("Loading messages")
+        DeprecatedPrintLogger.shared.log("Messages loaded")
+    }
+
+    public func sendMessage(_ text: String) {
+        DeprecatedNetworkClient.shared.post("/api/messages/send", data: ["text": text])
+        DeprecatedTokenManager.shared.setToken("chat_token")
+        let _ = DeprecatedPasswordAuth.shared.authenticate(password: "chat")
+        deprecatedFetchWithCallback("/api/messages/status") { _ in }
+    }
+
     // MARK: - Escaping Closure Captures
     public func setupObservers() {
         // Capturing self in escaping closure without explicit capture
@@ -75,6 +91,7 @@ public class ChatView {
     }
 
     private func handleMessage() {
+        DeprecatedCacheManager.shared.store("message")
         print("handling")
     }
 

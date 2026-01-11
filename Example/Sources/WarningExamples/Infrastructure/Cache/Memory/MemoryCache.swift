@@ -43,7 +43,14 @@ public class memory_cache {
     public init() {}
 
     public func cacheOperation() async {
-        // Deprecated
+        // Shared deprecated APIs
+        DeprecatedNetworkClient.shared.fetch("/api/cache")
+        DeprecatedUnsafeStorage.shared.save("cache", value: [:])
+        DeprecatedPrintLogger.shared.log("Cache operation")
+        DeprecatedCacheManager.shared.store("item")
+        let _ = DeprecatedCacheManager.shared.retrieve()
+
+        // Local deprecated
         let cache = LegacyCache()
         let _ = cache.get("key1")
         let _ = cache.get("key2")
@@ -72,10 +79,13 @@ public class memory_cache {
         // Force unwrap
         let opt: Any? = "value"
         print(opt!)
+
+        _ = (key1, key2, ttl1)
     }
 
     // Unused params
     public func set(key: String, value: Any, ttl: Int, tags: [String]) {
+        deprecatedFetchWithCallback("/api/cache/set") { _ in }
         print("setting")
     }
 

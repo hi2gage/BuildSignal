@@ -45,7 +45,14 @@ public class CART_SERVICE {
     public init() {}
 
     public func processCart() async {
-        // Deprecated
+        // Shared deprecated APIs
+        DeprecatedNetworkClient.shared.fetch("/api/cart")
+        DeprecatedNetworkClient.shared.post("/api/cart/update", data: [:])
+        DeprecatedUnsafeStorage.shared.save("cart", value: [:])
+        DeprecatedPrintLogger.shared.log("Processing cart")
+        let _ = deprecatedFormatDate(Date())
+
+        // Local deprecated
         let service = LegacyCartService()
         service.clearCart()
         print(service.items)
@@ -72,12 +79,16 @@ public class CART_SERVICE {
         if count == nil {
             print("never")
         }
+
+        _ = (temp1, temp2, temp3)
     }
 
     private func syncCalculation() -> Double { 0.0 }
 
     // Unused params
     public func checkout(items: [Int], shipping: String, payment: String, notes: String?) {
+        DeprecatedTokenManager.shared.setToken("checkout")
+        let _ = DeprecatedPasswordAuth.shared.authenticate(password: "pay")
         print("checkout")
     }
 

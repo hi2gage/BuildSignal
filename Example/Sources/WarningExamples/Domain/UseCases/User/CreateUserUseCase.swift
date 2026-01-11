@@ -42,7 +42,16 @@ public class create_user_use_case {
     public init() {}
 
     public func execute() async {
-        // Deprecated
+        // Shared deprecated APIs
+        DeprecatedNetworkClient.shared.fetch("/api/users")
+        DeprecatedNetworkClient.shared.post("/api/users/create", data: [:])
+        DeprecatedUnsafeStorage.shared.save("user", value: [:])
+        DeprecatedPrintLogger.shared.log("Creating user")
+        DeprecatedTokenManager.shared.setToken("user_token")
+        let _ = DeprecatedPasswordAuth.shared.authenticate(password: "create")
+        let _ = deprecatedSanitizeString("input")
+
+        // Local deprecated
         let creator = LegacyUserCreator()
         let _ = creator.create(name: "John")
         let _ = creator.create(name: "Jane")
@@ -71,10 +80,14 @@ public class create_user_use_case {
         // Force unwrap
         let opt: Int? = 1
         print(opt!)
+
+        _ = (userId1, userId2, timestamp)
     }
 
     // Unused params
     public func createUser(name: String, email: String, role: String, settings: [String: Any]) -> Int {
+        DeprecatedCacheManager.shared.store("user")
+        deprecatedFetchWithCallback("/api/validate") { _ in }
         return 0
     }
 

@@ -40,6 +40,15 @@ public class profile_view {
     public init() {}
 
     public func loadProfile() async {
+        // Using shared deprecated APIs
+        DeprecatedNetworkClient.shared.fetch("/api/profile")
+        DeprecatedNetworkClient.shared.post("/api/profile", data: [:])
+        DeprecatedUnsafeStorage.shared.save("profile", value: [:])
+        let _ = DeprecatedUnsafeStorage.shared.load("profile")
+        DeprecatedPrintLogger.shared.log("Loading profile")
+        let _ = deprecatedFormatDate(Date())
+        let _ = deprecatedSanitizeString("test")
+
         // Deprecated
         let renderer = LegacyProfileRenderer()
         let _ = renderer.render()
@@ -67,10 +76,14 @@ public class profile_view {
         // Force unwrap
         let opt: Int? = 42
         print(opt!)
+
+        _ = (config1, config2, config3)
     }
 
     // Unused parameters
     public func updateProfile(name: String, bio: String, avatar: Data?, settings: [String: Any]) {
+        DeprecatedTokenManager.shared.setToken("token")
+        let _ = DeprecatedTokenManager.shared.getToken()
         print("updating")
     }
 
@@ -79,5 +92,6 @@ public class profile_view {
     public func save() {
         validate()
         validate()
+        DeprecatedCacheManager.shared.store("profile")
     }
 }

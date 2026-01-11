@@ -4,47 +4,72 @@ import XCLogParser
 /// Displays a list of deprecation warnings grouped by message.
 struct DeprecationsListView: View {
     @ObservedObject var viewModel: ProjectDetailViewModel
+    @ObservedObject private var favoritesManager = FavoritesManager.shared
+    @StateObject private var selectionManager = SelectionManager<IdentifiedDeprecation>()
     @State private var searchText = ""
-    @State private var selectedIDs: Set<String> = []
+    @State private var showFavoritesOnly = false
 
     private var deprecations: [Notice] {
         viewModel.warnings.filter { $0.type == .deprecatedWarning }
     }
 
     private var filteredDeprecations: [Notice] {
-        guard !searchText.isEmpty else { return deprecations }
-        let query = searchText.lowercased()
-        return deprecations.filter {
-            $0.title.lowercased().contains(query) ||
-            $0.documentURL.lowercased().contains(query)
+        var result = deprecations
+
+        // Apply search filter
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            result = result.filter {
+                $0.title.lowercased().contains(query) ||
+                $0.documentURL.lowercased().contains(query)
+            }
         }
+
+        // Apply favorites filter
+        if showFavoritesOnly {
+            result = result.filter { isFavorite($0.title) }
+        }
+
+        return result
     }
 
-    private var groupedBySymbol: [(symbol: String, items: [IdentifiedDeprecation])] {
+    private var allIdentifiedItems: [IdentifiedDeprecation] {
+        filteredDeprecations.enumerated().map { IdentifiedDeprecation($0.element, index: $0.offset) }
+    }
+
+    private var groupedByMessage: [(message: String, items: [IdentifiedDeprecation], isFavorite: Bool)] {
         let grouped = Dictionary(grouping: filteredDeprecations.enumerated().map { ($0.offset, $0.element) }) {
-            extractDeprecatedSymbol(from: $0.1.title)
+            $0.1.title
         }
         return grouped
-            .map { (symbol: $0.key, items: $0.value.map { IdentifiedDeprecation($0.1, index: $0.0) }) }
-            .sorted { $0.items.count > $1.items.count }
+            .map { (message: $0.key,
+                    items: $0.value.map { IdentifiedDeprecation($0.1, index: $0.0) }
+                        .sorted { $0.notice.documentURL < $1.notice.documentURL },
+                    isFavorite: isFavorite($0.key)) }
+            .sorted {
+                // Favorites first, then by count descending, then by message alphabetically
+                if $0.isFavorite != $1.isFavorite {
+                    return $0.isFavorite
+                }
+                if $0.items.count != $1.items.count {
+                    return $0.items.count > $1.items.count
+                }
+                return $0.message < $1.message
+            }
     }
 
-    /// Extracts the deprecated symbol name from a deprecation message
-    private func extractDeprecatedSymbol(from title: String) -> String {
-        // Common patterns:
-        // "'UIWebView' is deprecated"
-        // "'NSURLConnection' was deprecated in iOS 9.0"
-        // "init(coder:) has been deprecated"
+    private var favoritesCount: Int {
+        Set(deprecations.map(\.title)).filter { isFavorite($0) }.count
+    }
 
-        // Try to extract quoted symbol first
-        if let range = title.range(of: #"'([^']+)'"#, options: .regularExpression) {
-            let match = title[range]
-            // Remove the quotes
-            return String(match.dropFirst().dropLast())
-        }
+    // MARK: - Favorites Helpers
 
-        // Fall back to the full title if no pattern matches
-        return title
+    private func isFavorite(_ message: String) -> Bool {
+        favoritesManager.isFavorite(FavoritesManager.identifier(forDeprecationMessage: message))
+    }
+
+    private func toggleFavorite(_ message: String) {
+        favoritesManager.toggleFavorite(FavoritesManager.identifier(forDeprecationMessage: message))
     }
 
     var body: some View {
@@ -59,6 +84,19 @@ struct DeprecationsListView: View {
             } else {
                 deprecationsList
             }
+        }
+        .selectableList(manager: selectionManager)
+        .onChange(of: deprecations.count) { _, _ in
+            selectionManager.items = allIdentifiedItems
+        }
+        .onChange(of: searchText) { _, _ in
+            selectionManager.items = allIdentifiedItems
+        }
+        .onChange(of: showFavoritesOnly) { _, _ in
+            selectionManager.items = allIdentifiedItems
+        }
+        .onAppear {
+            selectionManager.items = allIdentifiedItems
         }
     }
 
@@ -87,6 +125,25 @@ struct DeprecationsListView: View {
             .cornerRadius(8)
             .frame(maxWidth: 250)
 
+            // Favorites filter
+            Button {
+                showFavoritesOnly.toggle()
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: showFavoritesOnly ? "star.fill" : "star")
+                        .foregroundStyle(showFavoritesOnly ? .yellow : .secondary)
+                    if favoritesCount > 0 {
+                        Text("\(favoritesCount)")
+                            .font(.caption)
+                    }
+                }
+            }
+            .buttonStyle(.bordered)
+            .help(showFavoritesOnly ? "Show All" : "Show Favorites Only")
+
+            // Selection info
+            SelectionInfoView(count: selectionManager.selectionCount)
+
             Spacer()
 
             Text("\(filteredDeprecations.count) deprecations")
@@ -99,21 +156,27 @@ struct DeprecationsListView: View {
     // MARK: - Empty States
 
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No Deprecations", systemImage: "checkmark.circle")
-        } description: {
-            Text("Great news! No deprecated APIs found in this build.")
+        VStack {
+            Spacer()
+            ContentUnavailableView {
+                Label("No Deprecations", systemImage: "checkmark.circle")
+            } description: {
+                Text("Great news! No deprecated APIs found in this build.")
+            }
+            Spacer()
         }
     }
 
     private var noResultsState: some View {
-        ContentUnavailableView {
-            Label("No Results", systemImage: "magnifyingglass")
-        } description: {
-            Text("No deprecations match \"\(searchText)\"")
-        } actions: {
-            Button("Clear Search") {
-                searchText = ""
+        VStack {
+            ContentUnavailableView {
+                Label("No Results", systemImage: "magnifyingglass")
+            } description: {
+                Text("No deprecations match \"\(searchText)\"")
+            } actions: {
+                Button("Clear Search") {
+                    searchText = ""
+                }
             }
         }
     }
@@ -121,8 +184,8 @@ struct DeprecationsListView: View {
     // MARK: - List
 
     private var deprecationsList: some View {
-        List(selection: $selectedIDs) {
-            ForEach(groupedBySymbol, id: \.symbol) { group in
+        List(selection: selectionManager.selectionBinding) {
+            ForEach(groupedByMessage, id: \.message) { group in
                 Section {
                     ForEach(group.items) { item in
                         DeprecationRow(deprecation: item.notice)
@@ -130,14 +193,23 @@ struct DeprecationsListView: View {
                             .onTapGesture(count: 2) { openInXcode(item.notice) }
                     }
                 } header: {
-                    HStack {
+                    HStack(alignment: .top) {
+                        // Favorite button
+                        Button {
+                            toggleFavorite(group.message)
+                        } label: {
+                            Image(systemName: group.isFavorite ? "star.fill" : "star")
+                                .foregroundStyle(group.isFavorite ? .yellow : .secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .help(group.isFavorite ? "Remove from Favorites" : "Add to Favorites")
+
                         Image(systemName: "clock.arrow.circlepath")
                             .foregroundStyle(.orange)
 
-                        Text(group.symbol)
+                        Text(group.message)
                             .font(.subheadline)
                             .fontWeight(.medium)
-                            .lineLimit(1)
 
                         Spacer()
 
@@ -187,15 +259,27 @@ struct DeprecationsListView: View {
 
 // MARK: - Supporting Types
 
-private struct IdentifiedDeprecation: Identifiable {
+struct IdentifiedDeprecation: SelectableItem {
     let notice: Notice
     let index: Int
 
     var id: String { "\(notice.documentURL):\(notice.startingLineNumber):\(index)" }
 
+    var copyableText: String {
+        let fileName = extractFileName(from: notice.documentURL)
+        let line = notice.startingLineNumber > 0 ? ":\(notice.startingLineNumber)" : ""
+        return "\(fileName)\(line): \(notice.title)"
+    }
+
     init(_ notice: Notice, index: Int) {
         self.notice = notice
         self.index = index
+    }
+
+    private func extractFileName(from documentURL: String) -> String {
+        guard !documentURL.isEmpty else { return "(Unknown)" }
+        let url = URL(string: documentURL) ?? URL(fileURLWithPath: documentURL)
+        return url.lastPathComponent
     }
 }
 

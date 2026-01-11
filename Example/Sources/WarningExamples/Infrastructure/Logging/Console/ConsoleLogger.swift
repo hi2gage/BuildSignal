@@ -42,7 +42,14 @@ public class console_logger {
     public init() {}
 
     public func log() async {
-        // Deprecated
+        // Shared deprecated APIs
+        DeprecatedNetworkClient.shared.fetch("/api/logs")
+        DeprecatedUnsafeStorage.shared.save("logs", value: [:])
+        DeprecatedPrintLogger.shared.log("Logging message")
+        DeprecatedPrintLogger.shared.error("Error occurred")
+        let _ = deprecatedFormatDate(Date())
+
+        // Local deprecated
         let logger = LegacyLogger()
         logger.print("test message 1")
         logger.print("test message 2")
@@ -71,10 +78,13 @@ public class console_logger {
         // Force unwrap
         let opt: Date? = Date()
         Swift.print(opt!)
+
+        _ = (msg1, msg2, msg3)
     }
 
     // Unused params
     public func format(message: String, level: String, timestamp: Date, context: [String: Any]) -> String {
+        DeprecatedCacheManager.shared.store("format")
         return ""
     }
 
