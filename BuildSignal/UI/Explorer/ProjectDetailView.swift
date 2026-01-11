@@ -1,26 +1,21 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Detail view showing information about the selected project with tabs.
-struct ProjectDetailView: View {
-    let project: XcodeProject
-    @StateObject private var viewModel: ProjectDetailViewModel
-
-    init(project: XcodeProject) {
-        self.project = project
-        self._viewModel = StateObject(wrappedValue: ProjectDetailViewModel(project: project))
-    }
+/// Detail content showing information about the selected project with tabs.
+/// Used by MainProjectView which manages the viewModel.
+struct ProjectDetailContent: View {
+    @ObservedObject var viewModel: ProjectDetailViewModel
 
     var body: some View {
         TabView {
             // Overview Tab
-            OverviewTabView(project: project, viewModel: viewModel)
+            OverviewTabView(project: viewModel.project, viewModel: viewModel)
                 .tabItem {
                     Label("Overview", systemImage: "info.circle")
                 }
 
             // Warnings List Tab
-            WarningsListView(warnings: viewModel.warnings)
+            WarningsListView(viewModel: viewModel)
                 .tabItem {
                     Label("Warnings", systemImage: "exclamationmark.triangle")
                 }
@@ -33,6 +28,26 @@ struct ProjectDetailView: View {
                 }
         }
         .padding()
+    }
+}
+
+/// Legacy wrapper for backward compatibility (e.g., previews).
+struct ProjectDetailView: View {
+    let project: XcodeProject
+    @StateObject private var viewModel: ProjectDetailViewModel
+
+    init(project: XcodeProject) {
+        self.project = project
+        self._viewModel = StateObject(wrappedValue: ProjectDetailViewModel(project: project))
+    }
+
+    var body: some View {
+        ProjectDetailContent(viewModel: viewModel)
+            .task {
+                if viewModel.hasLatestBuild && viewModel.parsingState == .idle {
+                    await viewModel.parseLatestBuild()
+                }
+            }
     }
 }
 
@@ -385,31 +400,31 @@ private struct RawJSONTabView: View {
     }
 }
 
-#Preview {
-    ProjectDetailView(
-        project: XcodeProject(
-            id: "test-abc123",
-            name: "TestProject",
-            workspacePath: URL(fileURLWithPath: "/Users/test/Projects/TestProject/TestProject.xcodeproj"),
-            derivedDataPath: URL(fileURLWithPath: "/Users/test/Library/Developer/Xcode/DerivedData/TestProject-abc123"),
-            lastAccessedDate: Date(),
-            builds: [
-                BuildLog(
-                    id: "build-1",
-                    fileName: "build.xcactivitylog",
-                    schemeName: "TestProject",
-                    containerName: "TestProject project",
-                    title: "Build TestProject",
-                    status: .warning,
-                    warningCount: 142,
-                    errorCount: 0,
-                    analyzerIssueCount: 3,
-                    testFailureCount: 0,
-                    startTime: Date().addingTimeInterval(-3600),
-                    endTime: Date().addingTimeInterval(-3545)
-                )
-            ]
-        )
-    )
-    .frame(width: 600, height: 700)
-}
+//#Preview {
+//    ProjectDetailView(
+//        project: XcodeProject(
+//            id: "test-abc123",
+//            name: "TestProject",
+//            workspacePath: URL(fileURLWithPath: "/Users/test/Projects/TestProject/TestProject.xcodeproj"),
+//            derivedDataPath: URL(fileURLWithPath: "/Users/test/Library/Developer/Xcode/DerivedData/TestProject-abc123"),
+//            lastAccessedDate: Date(),
+//            builds: [
+//                BuildLog(
+//                    id: "build-1",
+//                    fileName: "build.xcactivitylog",
+//                    schemeName: "TestProject",
+//                    containerName: "TestProject project",
+//                    title: "Build TestProject",
+//                    status: .warning,
+//                    warningCount: 142,
+//                    errorCount: 0,
+//                    analyzerIssueCount: 3,
+//                    testFailureCount: 0,
+//                    startTime: Date().addingTimeInterval(-3600),
+//                    endTime: Date().addingTimeInterval(-3545)
+//                )
+//            ]
+//        )
+//    )
+//    .frame(width: 600, height: 700)
+//}

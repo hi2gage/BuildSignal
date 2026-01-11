@@ -80,6 +80,7 @@ struct BuildSignalApp: App {
                 }
             }
         }
+        .restorationBehavior(.disabled)
         .windowStyle(.automatic)
         .defaultSize(width: 1000, height: 700)
         .commands {
@@ -148,4 +149,5 @@ struct BuildSignalApp: App {
             }
         }
     }
+
 }

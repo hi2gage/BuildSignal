@@ -22,6 +22,19 @@ final class CategoryManager: ObservableObject {
         loadCategories()
     }
 
+    #if DEBUG
+    /// Creates a CategoryManager with preset data for previews (skips UserDefaults)
+    static func forPreview(with categories: [WarningCategory] = []) -> CategoryManager {
+        let manager = CategoryManager(forPreview: true)
+        manager.customCategories = categories
+        return manager
+    }
+
+    private init(forPreview: Bool) {
+        // Skip loadCategories() for previews
+    }
+    #endif
+
     // MARK: - CRUD Operations
 
     /// Add a new custom category

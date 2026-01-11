@@ -157,45 +157,6 @@ struct CategoryManagerView: View {
     }
 }
 
-// MARK: - Category Row View
-
-private struct CategoryRowView: View {
-    let category: WarningCategory
-    let isBuiltIn: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: category.icon)
-                .font(.title2)
-                .foregroundStyle(category.color)
-                .frame(width: 32)
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text(category.name)
-                        .font(.headline)
-
-                    if isBuiltIn {
-                        Text("Built-in")
-                            .font(.caption2)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.quaternary)
-                            .cornerRadius(4)
-                    }
-                }
-
-                Text("\(category.patterns.count) pattern\(category.patterns.count == 1 ? "" : "s")")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-        }
-        .padding(.vertical, 4)
-    }
-}
-
 // MARK: - Category Editor View
 
 struct CategoryEditorView: View {
@@ -326,5 +287,26 @@ struct CategoryDocument: FileDocument {
 }
 
 #Preview {
-    CategoryManagerView(categoryManager: CategoryManager.shared)
+    @Previewable @StateObject var manager = CategoryManager.forPreview(with: [
+        WarningCategory(
+            id: "custom_test1",
+            name: "My Custom Rules",
+            icon: "star.fill",
+            colorName: "purple",
+            patterns: [".*custom.*", "TODO:"],
+            sortOrder: 100,
+            isBuiltIn: false
+        ),
+        WarningCategory(
+            id: "custom_test2",
+            name: "Legacy Warnings",
+            icon: "clock",
+            colorName: "orange",
+            patterns: ["deprecated", "legacy"],
+            sortOrder: 101,
+            isBuiltIn: false
+        )
+    ])
+
+    CategoryManagerView(categoryManager: manager)
 }

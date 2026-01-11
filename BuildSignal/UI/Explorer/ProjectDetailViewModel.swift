@@ -34,6 +34,7 @@ final class ProjectDetailViewModel: ObservableObject {
     @Published private(set) var parsedBuildStep: BuildStep?
     @Published private(set) var warnings: [Notice] = []
     @Published private(set) var errors: [Notice] = []
+    @Published var selectedScope: ScopeItem = .all
 
     // MARK: - Properties
 
@@ -53,10 +54,38 @@ final class ProjectDetailViewModel: ObservableObject {
         project.latestBuild != nil
     }
 
+    var projectWarningCount: Int {
+        warnings.filter { !isPackageDependency($0) }.count
+    }
+
+    var packageWarningCount: Int {
+        warnings.filter { isPackageDependency($0) }.count
+    }
+
+    var directoryTree: [DirectoryNode] {
+        buildDirectoryTree()
+    }
+
     // MARK: - Initialization
 
     init(project: XcodeProject) {
         self.project = project
+    }
+
+    /// Creates a view model with sample warnings for previews
+    static func preview(withWarnings warnings: [Notice] = []) -> ProjectDetailViewModel {
+        let project = XcodeProject(
+            id: "preview-project",
+            name: "PreviewProject",
+            workspacePath: URL(fileURLWithPath: "/Users/test/PreviewProject/PreviewProject.xcodeproj"),
+            derivedDataPath: URL(fileURLWithPath: "/Users/test/Library/Developer/Xcode/DerivedData/PreviewProject-abc123"),
+            lastAccessedDate: Date(),
+            builds: []
+        )
+        let viewModel = ProjectDetailViewModel(project: project)
+        viewModel.warnings = warnings
+        viewModel.parsingState = .parsed(json: "{}")
+        return viewModel
     }
 
     // MARK: - Public Methods
@@ -94,5 +123,146 @@ final class ProjectDetailViewModel: ObservableObject {
         parsedBuildStep = nil
         warnings = []
         errors = []
+        selectedScope = .all
+    }
+
+    // MARK: - Scope Helpers
+
+    func isPackageDependency(_ warning: Notice) -> Bool {
+        let url = warning.documentURL.lowercased()
+        return url.contains("/sourcepackages/") ||
+               url.contains("/checkouts/") ||
+               url.contains("/.build/") ||
+               url.contains("/deriveddata/") && url.contains("/sourcepackages/")
+    }
+
+    private func buildDirectoryTree() -> [DirectoryNode] {
+        let projectWarnings = warnings.filter { !isPackageDependency($0) && !$0.documentURL.isEmpty }
+        guard !projectWarnings.isEmpty else { return [] }
+
+        var pathCounts: [String: Int] = [:]
+        for warning in projectWarnings {
+            let dirPath = getDirectoryPath(from: warning.documentURL)
+            guard !dirPath.isEmpty else { continue }
+            pathCounts[dirPath, default: 0] += 1
+        }
+
+        guard !pathCounts.isEmpty else { return [] }
+
+        let allPaths = Array(pathCounts.keys).sorted()
+        let commonPrefix = findCommonPathPrefix(allPaths)
+
+        class MutableNode {
+            let name: String
+            let path: String
+            var children: [String: MutableNode] = [:]
+            var directCount: Int = 0
+
+            init(name: String, path: String) {
+                self.name = name
+                self.path = path
+            }
+
+            var totalCount: Int {
+                directCount + children.values.reduce(0) { $0 + $1.totalCount }
+            }
+
+            func getOrCreateChild(name: String, path: String) -> MutableNode {
+                if let existing = children[name] {
+                    return existing
+                }
+                let node = MutableNode(name: name, path: path)
+                children[name] = node
+                return node
+            }
+
+            func toDirectoryNode() -> DirectoryNode {
+                DirectoryNode(
+                    id: path,
+                    name: name,
+                    path: path,
+                    children: children.values
+                        .map { $0.toDirectoryNode() }
+                        .sorted { $0.warningCount > $1.warningCount },
+                    warningCount: totalCount
+                )
+            }
+        }
+
+        let rootContainer = MutableNode(name: "", path: commonPrefix)
+
+        for (fullPath, count) in pathCounts {
+            var relativePath = fullPath
+            if fullPath.hasPrefix(commonPrefix) {
+                relativePath = String(fullPath.dropFirst(commonPrefix.count))
+                if relativePath.hasPrefix("/") {
+                    relativePath = String(relativePath.dropFirst())
+                }
+            }
+
+            let components = relativePath.split(separator: "/").map(String.init)
+            guard !components.isEmpty else { continue }
+
+            var currentNode = rootContainer
+            var currentPath = commonPrefix
+
+            for (index, component) in components.enumerated() {
+                currentPath += "/" + component
+                currentNode = currentNode.getOrCreateChild(name: component, path: currentPath)
+
+                if index == components.count - 1 {
+                    currentNode.directCount += count
+                }
+            }
+        }
+
+        return rootContainer.children.values
+            .map { $0.toDirectoryNode() }
+            .sorted { $0.warningCount > $1.warningCount }
+    }
+
+    private func getDirectoryPath(from documentURL: String) -> String {
+        guard !documentURL.isEmpty else { return "" }
+
+        if documentURL.hasPrefix("file://") {
+            if let url = URL(string: documentURL) {
+                return url.deletingLastPathComponent().path
+            }
+            if let decoded = documentURL.removingPercentEncoding,
+               let url = URL(string: decoded) {
+                return url.deletingLastPathComponent().path
+            }
+            let pathPart = String(documentURL.dropFirst(7))
+            let url = URL(fileURLWithPath: pathPart)
+            return url.deletingLastPathComponent().path
+        }
+
+        let url = URL(fileURLWithPath: documentURL)
+        return url.deletingLastPathComponent().path
+    }
+
+    private func findCommonPathPrefix(_ paths: [String]) -> String {
+        guard let first = paths.first else { return "" }
+
+        let firstComponents = first.split(separator: "/").map(String.init)
+        var commonComponents: [String] = []
+
+        for (index, component) in firstComponents.enumerated() {
+            let allMatch = paths.allSatisfy { path in
+                let components = path.split(separator: "/").map(String.init)
+                return index < components.count && components[index] == component
+            }
+            if allMatch {
+                commonComponents.append(component)
+            } else {
+                break
+            }
+        }
+
+        if commonComponents.count > 0 {
+            commonComponents.removeLast()
+        }
+
+        return "/" + commonComponents.joined(separator: "/")
     }
 }
