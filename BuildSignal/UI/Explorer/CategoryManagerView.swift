@@ -286,6 +286,7 @@ struct CategoryDocument: FileDocument {
     }
 }
 
+#if DEBUG
 #Preview {
     @Previewable @StateObject var manager = CategoryManager.forPreview(with: [
         WarningCategory(
@@ -310,3 +311,4 @@ struct CategoryDocument: FileDocument {
 
     CategoryManagerView(categoryManager: manager)
 }
+#endif
