@@ -14,12 +14,19 @@ struct ProjectDetailContent: View {
                     Label("Overview", systemImage: "info.circle")
                 }
 
-            // Warnings List Tab
-            WarningsListView(viewModel: viewModel)
+            // Warnings List Tab (non-deprecations)
+            WarningsListView(viewModel: viewModel, filterType: .warnings)
                 .tabItem {
                     Label("Warnings", systemImage: "exclamationmark.triangle")
                 }
-                .badge(viewModel.warnings.count)
+                .badge(viewModel.warningsOnlyCount)
+
+            // Deprecations Tab
+            DeprecationsListView(viewModel: viewModel)
+                .tabItem {
+                    Label("Deprecations", systemImage: "clock.arrow.circlepath")
+                }
+                .badge(viewModel.deprecationsCount)
 
             // Raw JSON Tab
             RawJSONTabView(viewModel: viewModel)

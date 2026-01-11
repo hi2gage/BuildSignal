@@ -19,6 +19,20 @@ struct MainProjectView: View {
             ProjectDetailContent(viewModel: viewModel)
         }
         .navigationTitle(project.displayName)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    Task {
+                        await viewModel.parseLatestBuild()
+                    }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .keyboardShortcut("r", modifiers: .command)
+                .help("Refresh from DerivedData")
+                .disabled(viewModel.parsingState == .parsing)
+            }
+        }
         .task {
             // Automatically start analysis when project is opened
             if viewModel.hasLatestBuild && viewModel.parsingState == .idle {

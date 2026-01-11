@@ -79,15 +79,18 @@ final class CategoryManager: ObservableObject {
     func moveCategories(from source: IndexSet, to destination: Int) {
         customCategories.move(fromOffsets: source, toOffset: destination)
         // Update sort orders after move
+        // Custom categories use negative sort orders so they're checked before built-in ones
         for (index, _) in customCategories.enumerated() {
-            customCategories[index].sortOrder = 100 + index  // Custom categories start at 100
+            customCategories[index].sortOrder = -1000 + index
         }
         saveCategories()
     }
 
     /// Create a new empty category with defaults
     func createNewCategory() -> WarningCategory {
-        let nextSortOrder = (customCategories.map(\.sortOrder).max() ?? 99) + 1
+        // Custom categories use negative sort orders so they're checked before built-in ones
+        // New categories go at the end of custom categories but still before built-in
+        let nextSortOrder = (customCategories.map(\.sortOrder).max() ?? -1001) + 1
         return WarningCategory(
             id: "custom_\(UUID().uuidString.prefix(8))",
             name: "New Category",
@@ -105,7 +108,20 @@ final class CategoryManager: ObservableObject {
         guard let data = UserDefaults.standard.data(forKey: userDefaultsKey) else { return }
         do {
             let decoder = JSONDecoder()
-            customCategories = try decoder.decode([WarningCategory].self, from: data)
+            var loaded = try decoder.decode([WarningCategory].self, from: data)
+
+            // Migrate old categories with positive sort orders to negative
+            // so custom categories are checked before built-in ones
+            let needsMigration = loaded.contains { $0.sortOrder >= 0 }
+            if needsMigration {
+                for index in loaded.indices {
+                    loaded[index].sortOrder = -1000 + index
+                }
+                customCategories = loaded
+                saveCategories()
+            } else {
+                customCategories = loaded
+            }
         } catch {
             print("Failed to load custom categories: \(error)")
         }
@@ -167,7 +183,7 @@ final class CategoryManager: ObservableObject {
                 icon: category.icon,
                 colorName: category.colorName,
                 patterns: category.patterns,
-                sortOrder: (customCategories.map(\.sortOrder).max() ?? 99) + 1,
+                sortOrder: (customCategories.map(\.sortOrder).max() ?? -1001) + 1,
                 isBuiltIn: false
             )
             customCategories.append(adjustedCategory)
@@ -183,7 +199,7 @@ final class CategoryManager: ObservableObject {
             icon: category.icon,
             colorName: category.colorName,
             patterns: category.patterns,
-            sortOrder: (customCategories.map(\.sortOrder).max() ?? 99) + 1,
+            sortOrder: (customCategories.map(\.sortOrder).max() ?? -1001) + 1,
             isBuiltIn: false
         )
         addCategory(newCategory)

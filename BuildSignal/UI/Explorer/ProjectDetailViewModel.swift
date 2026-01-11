@@ -62,6 +62,14 @@ final class ProjectDetailViewModel: ObservableObject {
         warnings.filter { isPackageDependency($0) }.count
     }
 
+    var warningsOnlyCount: Int {
+        warnings.filter { $0.type != .deprecatedWarning }.count
+    }
+
+    var deprecationsCount: Int {
+        warnings.filter { $0.type == .deprecatedWarning }.count
+    }
+
     var directoryTree: [DirectoryNode] {
         buildDirectoryTree()
     }

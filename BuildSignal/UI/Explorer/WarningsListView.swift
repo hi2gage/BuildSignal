@@ -10,7 +10,30 @@ struct WarningsListView: View {
     @State private var selectedIDs: Set<String> = []
     @State private var showingCategoryManager = false
 
-    private var warnings: [Notice] { viewModel.warnings }
+    /// Filter type for the tab (warnings only, deprecations only, or all)
+    enum FilterType {
+        case all
+        case warnings
+        case deprecations
+    }
+
+    let filterType: FilterType
+
+    init(viewModel: ProjectDetailViewModel, filterType: FilterType = .all) {
+        self.viewModel = viewModel
+        self.filterType = filterType
+    }
+
+    private var warnings: [Notice] {
+        switch filterType {
+        case .all:
+            return viewModel.warnings
+        case .warnings:
+            return viewModel.warnings.filter { $0.type != .deprecatedWarning }
+        case .deprecations:
+            return viewModel.warnings.filter { $0.type == .deprecatedWarning }
+        }
+    }
     private var selectedScope: ScopeItem { viewModel.selectedScope }
 
     enum GroupingOption: String, CaseIterable {
@@ -150,6 +173,7 @@ struct WarningsListView: View {
                 ForEach(group.identifiedWarnings) { item in
                     WarningRow(warning: item.warning, showFile: true)
                         .tag(item.id)
+                        .onTapGesture(count: 2) { openInXcode(item.warning) }
                 }
             } header: {
                 sectionHeader(
@@ -171,6 +195,7 @@ struct WarningsListView: View {
                 ForEach(group.identifiedWarnings) { item in
                     WarningRow(warning: item.warning, showFile: true)
                         .tag(item.id)
+                        .onTapGesture(count: 2) { openInXcode(item.warning) }
                 }
             } header: {
                 messageHeader(
@@ -222,6 +247,7 @@ struct WarningsListView: View {
                 ForEach(group.identifiedWarnings) { item in
                     WarningRow(warning: item.warning, showFile: false)
                         .tag(item.id)
+                        .onTapGesture(count: 2) { openInXcode(item.warning) }
                 }
             } header: {
                 sectionHeader(
@@ -243,6 +269,7 @@ struct WarningsListView: View {
                 ForEach(group.identifiedWarnings) { item in
                     WarningRow(warning: item.warning, showFile: true)
                         .tag(item.id)
+                        .onTapGesture(count: 2) { openInXcode(item.warning) }
                 }
             } header: {
                 sectionHeader(
@@ -262,6 +289,7 @@ struct WarningsListView: View {
         ForEach(identifiedFilteredWarnings) { item in
             WarningRow(warning: item.warning, showFile: true)
                 .tag(item.id)
+                .onTapGesture(count: 2) { openInXcode(item.warning) }
         }
     }
 
@@ -482,6 +510,37 @@ struct WarningsListView: View {
         case .interfaceBuilderWarning: return "Interface Builder"
         case .note: return "Notes"
         default: return type.rawValue
+        }
+    }
+
+    /// Opens the warning location in Xcode
+    private func openInXcode(_ warning: Notice) {
+        guard !warning.documentURL.isEmpty else { return }
+
+        // Parse the file URL
+        let filePath: String
+        if warning.documentURL.hasPrefix("file://") {
+            if let url = URL(string: warning.documentURL) {
+                filePath = url.path
+            } else if let decoded = warning.documentURL.removingPercentEncoding,
+                      let url = URL(string: decoded) {
+                filePath = url.path
+            } else {
+                filePath = String(warning.documentURL.dropFirst(7))
+            }
+        } else {
+            filePath = warning.documentURL
+        }
+
+        // Use xed to open file at specific line in Xcode
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/xed")
+        task.arguments = ["--line", "\(warning.startingLineNumber)", filePath]
+
+        do {
+            try task.run()
+        } catch {
+            print("Failed to open in Xcode: \(error)")
         }
     }
 }
