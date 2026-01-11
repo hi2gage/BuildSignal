@@ -133,15 +133,25 @@ public class NewProtocolImpl: NewProtocol {
     public func newRequirement() {}
 }
 
-// Stored property with availability
+// Computed property with availability
 public class PropertyAvailability {
-    @available(macOS 14.0, iOS 17.0, *)
-    public var newProperty: String = ""
-
-    @available(macOS 15.0, iOS 18.0, *)
-    public var evenNewerProperty: Int = 0
+    private var _newProperty: String = ""
+    private var _evenNewerProperty: Int = 0
 
     public init() {}
+
+    // Computed properties can have availability
+    @available(macOS 14.0, iOS 17.0, *)
+    public var newProperty: String {
+        get { _newProperty }
+        set { _newProperty = newValue }
+    }
+
+    @available(macOS 15.0, iOS 18.0, *)
+    public var evenNewerProperty: Int {
+        get { _evenNewerProperty }
+        set { _evenNewerProperty = newValue }
+    }
 
     public func accessProperties() {
         if #available(macOS 14.0, iOS 17.0, *) {

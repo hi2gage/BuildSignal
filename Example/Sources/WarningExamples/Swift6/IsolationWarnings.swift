@@ -137,9 +137,15 @@ public class MainActorConformance2: NonIsolatedProtocol {
     }
 }
 
+// Non-Sendable class for isolation tests
+public class IsolationTestData {
+    public var value: Int = 0
+    public init() {}
+}
+
 // Closure isolation issues
 public func closureIsolation1() {
-    let data = NonSendableData()
+    let data = IsolationTestData()
 
     // Closure inheriting no isolation but capturing non-Sendable
     let closure = {

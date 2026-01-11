@@ -24,6 +24,14 @@ let package = Package(
                 // Enable upcoming features that generate warnings
                 .enableUpcomingFeature("ExistentialAny"),
                 .enableUpcomingFeature("BareSlashRegexLiterals"),
+                .enableUpcomingFeature("ConciseMagicFile"),
+                .enableUpcomingFeature("DeprecateApplicationMain"),
+                .enableUpcomingFeature("DisableOutwardActorInference"),
+                .enableUpcomingFeature("GlobalConcurrency"),
+                .enableUpcomingFeature("ImportObjcForwardDeclarations"),
+                .enableUpcomingFeature("IsolatedDefaultValues"),
+                .enableUpcomingFeature("ForwardTrailingClosures"),
+                .enableUpcomingFeature("InferSendableFromCaptures"),
             ]
         ),
     ]

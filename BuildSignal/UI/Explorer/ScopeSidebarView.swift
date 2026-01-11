@@ -4,128 +4,95 @@ import SwiftUI
 struct ScopeSidebarView: View {
     @ObservedObject var viewModel: ProjectDetailViewModel
 
+    /// The currently selected directory path (nil if a non-directory scope is selected)
+    private var selectedDirectoryPath: String? {
+        if case .directory(let path, _) = viewModel.selectedScope {
+            return path
+        }
+        return nil
+    }
+
     var body: some View {
-        List {
-            Section("Scope") {
-                // All
-                scopeButton(item: .all, count: viewModel.warnings.count)
-
-                // Project
-                if viewModel.projectWarningCount > 0 {
-                    scopeButton(item: .project, count: viewModel.projectWarningCount)
-                }
-
-                // Package Dependencies
-                if viewModel.packageWarningCount > 0 {
-                    scopeButton(item: .packageDependencies, count: viewModel.packageWarningCount)
-                }
-            }
+        VStack(spacing: 0) {
+            // Scope filter section (SwiftUI)
+            ScopeFilterSection(viewModel: viewModel)
+                .padding(.top, 8)
 
             if !viewModel.directoryTree.isEmpty {
-                Section("Directories") {
-                    ForEach(viewModel.directoryTree) { node in
-                        DirectoryTreeSidebarRow(
-                            node: node,
-                            selectedScope: viewModel.selectedScope,
-                            onSelect: { scope in
-                                Task { @MainActor in
-                                    viewModel.selectedScope = scope
-                                }
-                            }
-                        )
-                    }
+                Divider()
+                    .padding(.vertical, 8)
+
+                // Section header
+                HStack {
+                    Text("Directories")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 4)
+
+                // Directory tree (NSOutlineView)
+                ScopeOutlineView(
+                    nodes: viewModel.directoryTree,
+                    selectedPath: selectedDirectoryPath,
+                    onSelect: { path, name in
+                        viewModel.selectedScope = .directory(path: path, name: name)
+                    }
+                )
             }
         }
-        .listStyle(.sidebar)
+    }
+}
+
+// MARK: - Scope Filter Section
+
+private struct ScopeFilterSection: View {
+    @ObservedObject var viewModel: ProjectDetailViewModel
+
+    var body: some View {
+        VStack(spacing: 2) {
+            scopeButton(item: .all, count: viewModel.warnings.count)
+
+            if viewModel.projectWarningCount > 0 {
+                scopeButton(item: .project, count: viewModel.projectWarningCount)
+            }
+
+            if viewModel.packageWarningCount > 0 {
+                scopeButton(item: .packageDependencies, count: viewModel.packageWarningCount)
+            }
+        }
+        .padding(.horizontal, 8)
     }
 
     private func scopeButton(item: ScopeItem, count: Int) -> some View {
         Button {
-            Task { @MainActor in
-                viewModel.selectedScope = item
-            }
+            viewModel.selectedScope = item
         } label: {
-            HStack {
-                Label(item.displayName, systemImage: item.icon)
-                    .foregroundStyle(viewModel.selectedScope == item ? Color.accentColor : Color.primary)
+            HStack(spacing: 8) {
+                Image(systemName: item.icon)
+                    .font(.system(size: 12))
+                    .frame(width: 16)
+                Text(item.displayName)
+                    .font(.system(size: 13))
                 Spacer()
                 Text("\(count)")
-                    .font(.caption)
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.secondary.opacity(0.2))
-                    .cornerRadius(4)
+                    .background(Color.secondary.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
             }
+            .contentShape(Rectangle())
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
         }
         .buttonStyle(.plain)
-        .listRowBackground(viewModel.selectedScope == item ? Color.accentColor.opacity(0.15) : Color.clear)
-    }
-}
-
-// MARK: - Directory Tree Sidebar Row
-
-private struct DirectoryTreeSidebarRow: View {
-    let node: DirectoryNode
-    let selectedScope: ScopeItem
-    let onSelect: (ScopeItem) -> Void
-
-    private var isSelected: Bool {
-        if case .directory(let path, _) = selectedScope {
-            return path == node.path
-        }
-        return false
-    }
-
-    private var thisScope: ScopeItem {
-        .directory(path: node.path, name: node.name)
-    }
-
-    var body: some View {
-        if node.children.isEmpty {
-            // Leaf node - just a button
-            Button {
-                onSelect(thisScope)
-            } label: {
-                rowContent
-            }
-            .buttonStyle(.plain)
-            .listRowBackground(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
-        } else {
-            // Has children - disclosure group
-            DisclosureGroup {
-                ForEach(node.children) { child in
-                    DirectoryTreeSidebarRow(
-                        node: child,
-                        selectedScope: selectedScope,
-                        onSelect: onSelect
-                    )
-                }
-            } label: {
-                Button {
-                    onSelect(thisScope)
-                } label: {
-                    rowContent
-                }
-                .buttonStyle(.plain)
-            }
-            .listRowBackground(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
-        }
-    }
-
-    private var rowContent: some View {
-        HStack {
-            Label(node.name, systemImage: node.children.isEmpty ? "doc" : "folder")
-                .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
-            Spacer()
-            Text("\(node.warningCount)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.secondary.opacity(0.2))
-                .cornerRadius(4)
-        }
+        .foregroundStyle(viewModel.selectedScope == item ? Color.accentColor : Color.primary)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(viewModel.selectedScope == item ? Color.accentColor.opacity(0.15) : Color.clear)
+        )
     }
 }

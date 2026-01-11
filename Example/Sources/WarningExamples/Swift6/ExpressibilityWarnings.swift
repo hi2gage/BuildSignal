@@ -142,63 +142,71 @@ public func multiExpressibleUsage() {
 }
 
 // Raw representable with expressibility
-public enum Status: String, ExpressibleByStringLiteral {
+public enum ExpressibleStatus: String, ExpressibleByStringLiteral {
     case active
     case inactive
     case pending
 
     public init(stringLiteral value: String) {
-        self = Status(rawValue: value) ?? .pending
+        self = ExpressibleStatus(rawValue: value) ?? .pending
     }
 }
 
 public func rawRepresentableUsage() {
-    let status1: Status = "active"
-    let status2: Status = "invalid" // Falls back to .pending
+    let status1: ExpressibleStatus = "active"
+    let status2: ExpressibleStatus = "invalid" // Falls back to .pending
 
     print(status1, status2)
 }
 
-// Codable with expressibility
-public struct JSONValue: Codable, ExpressibleByStringLiteral, ExpressibleByIntegerLiteral, ExpressibleByBooleanLiteral, ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral {
-    public enum Value: Codable {
-        case string(String)
-        case int(Int)
-        case bool(Bool)
-        case array([JSONValue])
-        case dict([String: JSONValue])
-    }
+// Simple JSON-like value type
+public enum SimpleValue {
+    case string(String)
+    case int(Int)
+    case bool(Bool)
+    case array([SimpleValue])
+    case dict([String: SimpleValue])
+    case null
+}
 
-    public var value: Value
-
+extension SimpleValue: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
-        self.value = .string(value)
-    }
-
-    public init(integerLiteral value: Int) {
-        self.value = .int(value)
-    }
-
-    public init(booleanLiteral value: Bool) {
-        self.value = .bool(value)
-    }
-
-    public init(arrayLiteral elements: JSONValue...) {
-        self.value = .array(elements)
-    }
-
-    public init(dictionaryLiteral elements: (String, JSONValue)...) {
-        var dict: [String: JSONValue] = [:]
-        for (key, value) in elements {
-            dict[key] = value
-        }
-        self.value = .dict(dict)
+        self = .string(value)
     }
 }
 
-public func jsonValueUsage() {
-    let json: JSONValue = ["name": "test", "count": 42, "active": true]
-    print(json)
+extension SimpleValue: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: Int) {
+        self = .int(value)
+    }
+}
+
+extension SimpleValue: ExpressibleByBooleanLiteral {
+    public init(booleanLiteral value: Bool) {
+        self = .bool(value)
+    }
+}
+
+extension SimpleValue: ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: SimpleValue...) {
+        self = .array(elements)
+    }
+}
+
+extension SimpleValue: ExpressibleByNilLiteral {
+    public init(nilLiteral: ()) {
+        self = .null
+    }
+}
+
+public func simpleValueUsage() {
+    let stringVal: SimpleValue = "hello"
+    let intVal: SimpleValue = 42
+    let boolVal: SimpleValue = true
+    let arrayVal: SimpleValue = [1, 2, 3]
+    let nilVal: SimpleValue = nil
+
+    print(stringVal, intVal, boolVal, arrayVal, nilVal)
 }
 
 // Literal conversion warnings
@@ -210,4 +218,39 @@ public func literalConversionWarnings() {
 
     let _: String = "hello" // String literal
     let _: Substring = "hello" // String literal to Substring
+}
+
+// Additional expressibility patterns
+public struct Identifier: ExpressibleByStringLiteral, Hashable {
+    public let value: String
+
+    public init(stringLiteral value: String) {
+        self.value = value
+    }
+
+    public init(_ value: String) {
+        self.value = value
+    }
+}
+
+public struct Percentage: ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral {
+    public let value: Double
+
+    public init(integerLiteral value: Int) {
+        self.value = Double(value)
+    }
+
+    public init(floatLiteral value: Double) {
+        self.value = value
+    }
+}
+
+public func identifierAndPercentageUsage() {
+    let id1: Identifier = "user_123"
+    let id2: Identifier = "order_456"
+
+    let percent1: Percentage = 50
+    let percent2: Percentage = 75.5
+
+    print(id1.value, id2.value, percent1.value, percent2.value)
 }

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import XCLogParser
 
@@ -165,15 +166,59 @@ struct WarningsListView: View {
         .listStyle(.inset)
     }
 
+    // MARK: - Warning Row with Context Menu
+
+    @ViewBuilder
+    private func warningRowWithContextMenu(item: IdentifiedWarning, showFile: Bool) -> some View {
+        WarningRow(warning: item.warning, showFile: showFile)
+            .tag(item.id)
+            .onTapGesture(count: 2) { openInXcode(item.warning) }
+            .contextMenu {
+                Button {
+                    openInXcode(item.warning)
+                } label: {
+                    Label("Open in Xcode", systemImage: "hammer")
+                }
+
+                Button {
+                    revealInNavigator(warning: item.warning)
+                } label: {
+                    Label("Reveal in Navigator", systemImage: "sidebar.left")
+                }
+
+                Divider()
+
+                Button {
+                    copyWarningText(item.warning)
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                }
+            }
+    }
+
+    private func revealInNavigator(warning: Notice) {
+        let filePath = getFilePath(from: warning.documentURL)
+        guard !filePath.isEmpty else { return }
+
+        let fileName = URL(fileURLWithPath: filePath).lastPathComponent
+        viewModel.selectedScope = .directory(path: filePath, name: fileName)
+    }
+
+    private func copyWarningText(_ warning: Notice) {
+        let file = extractFileName(from: warning.documentURL)
+        let line = warning.startingLineNumber > 0 ? ":\(warning.startingLineNumber)" : ""
+        let text = "\(file)\(line): \(warning.title)"
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
     // MARK: - Grouped by Smart Category
 
     private var groupedBySmartContent: some View {
         ForEach(sortedSmartGroups, id: \.category) { group in
             Section {
                 ForEach(group.identifiedWarnings) { item in
-                    WarningRow(warning: item.warning, showFile: true)
-                        .tag(item.id)
-                        .onTapGesture(count: 2) { openInXcode(item.warning) }
+                    warningRowWithContextMenu(item: item, showFile: true)
                 }
             } header: {
                 sectionHeader(
@@ -193,9 +238,7 @@ struct WarningsListView: View {
         ForEach(sortedMessageGroups, id: \.message) { group in
             Section {
                 ForEach(group.identifiedWarnings) { item in
-                    WarningRow(warning: item.warning, showFile: true)
-                        .tag(item.id)
-                        .onTapGesture(count: 2) { openInXcode(item.warning) }
+                    warningRowWithContextMenu(item: item, showFile: true)
                 }
             } header: {
                 messageHeader(
@@ -245,9 +288,7 @@ struct WarningsListView: View {
         ForEach(sortedFileGroups, id: \.file) { group in
             Section {
                 ForEach(group.identifiedWarnings) { item in
-                    WarningRow(warning: item.warning, showFile: false)
-                        .tag(item.id)
-                        .onTapGesture(count: 2) { openInXcode(item.warning) }
+                    warningRowWithContextMenu(item: item, showFile: false)
                 }
             } header: {
                 sectionHeader(
@@ -267,9 +308,7 @@ struct WarningsListView: View {
         ForEach(sortedTypeGroups, id: \.type) { group in
             Section {
                 ForEach(group.identifiedWarnings) { item in
-                    WarningRow(warning: item.warning, showFile: true)
-                        .tag(item.id)
-                        .onTapGesture(count: 2) { openInXcode(item.warning) }
+                    warningRowWithContextMenu(item: item, showFile: true)
                 }
             } header: {
                 sectionHeader(
@@ -287,9 +326,7 @@ struct WarningsListView: View {
 
     private var flatListContent: some View {
         ForEach(identifiedFilteredWarnings) { item in
-            WarningRow(warning: item.warning, showFile: true)
-                .tag(item.id)
-                .onTapGesture(count: 2) { openInXcode(item.warning) }
+            warningRowWithContextMenu(item: item, showFile: true)
         }
     }
 
@@ -378,7 +415,7 @@ struct WarningsListView: View {
         case .project:
             return !viewModel.isPackageDependency(warning)
         case .directory(let path, _):
-            return getDirectoryPath(from: warning.documentURL).hasPrefix(path)
+            return getFilePath(from: warning.documentURL).hasPrefix(path)
         }
     }
 
@@ -400,6 +437,24 @@ struct WarningsListView: View {
 
         let url = URL(fileURLWithPath: documentURL)
         return url.deletingLastPathComponent().path
+    }
+
+    private func getFilePath(from documentURL: String) -> String {
+        guard !documentURL.isEmpty else { return "" }
+
+        if documentURL.hasPrefix("file://") {
+            if let url = URL(string: documentURL) {
+                return url.path
+            }
+            if let decoded = documentURL.removingPercentEncoding,
+               let url = URL(string: decoded) {
+                return url.path
+            }
+            let pathPart = String(documentURL.dropFirst(7))
+            return URL(fileURLWithPath: pathPart).path
+        }
+
+        return URL(fileURLWithPath: documentURL).path
     }
 
     private var sortedSmartGroups: [(category: WarningCategory, identifiedWarnings: [IdentifiedWarning])] {

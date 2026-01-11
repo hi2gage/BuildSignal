@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import XCLogParser
 
@@ -9,12 +10,17 @@ struct DeprecationsListView: View {
     @State private var searchText = ""
     @State private var showFavoritesOnly = false
 
+    private var selectedScope: ScopeItem { viewModel.selectedScope }
+
     private var deprecations: [Notice] {
         viewModel.warnings.filter { $0.type == .deprecatedWarning }
     }
 
     private var filteredDeprecations: [Notice] {
         var result = deprecations
+
+        // Apply scope filter
+        result = result.filter { matchesScope($0) }
 
         // Apply search filter
         if !searchText.isEmpty {
@@ -47,10 +53,8 @@ struct DeprecationsListView: View {
                         .sorted { $0.notice.documentURL < $1.notice.documentURL },
                     isFavorite: isFavorite($0.key)) }
             .sorted {
-                // Favorites first, then by count descending, then by message alphabetically
-                if $0.isFavorite != $1.isFavorite {
-                    return $0.isFavorite
-                }
+                // Sort by count descending, then by message alphabetically for stability
+                // (favorites are visually marked but don't affect sort order)
                 if $0.items.count != $1.items.count {
                     return $0.items.count > $1.items.count
                 }
@@ -95,9 +99,58 @@ struct DeprecationsListView: View {
         .onChange(of: showFavoritesOnly) { _, _ in
             selectionManager.items = allIdentifiedItems
         }
+        .onChange(of: selectedScope) { _, _ in
+            selectionManager.items = allIdentifiedItems
+        }
         .onAppear {
             selectionManager.items = allIdentifiedItems
         }
+    }
+
+    // MARK: - Deprecation Row with Context Menu
+
+    @ViewBuilder
+    private func deprecationRowWithContextMenu(item: IdentifiedDeprecation) -> some View {
+        DeprecationRow(deprecation: item.notice)
+            .tag(item.id)
+            .onTapGesture(count: 2) { openInXcode(item.notice) }
+            .contextMenu {
+                Button {
+                    openInXcode(item.notice)
+                } label: {
+                    Label("Open in Xcode", systemImage: "hammer")
+                }
+
+                Button {
+                    revealInNavigator(notice: item.notice)
+                } label: {
+                    Label("Reveal in Navigator", systemImage: "sidebar.left")
+                }
+
+                Divider()
+
+                Button {
+                    copyDeprecationText(item.notice)
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                }
+            }
+    }
+
+    private func revealInNavigator(notice: Notice) {
+        let filePath = getFilePath(from: notice.documentURL)
+        guard !filePath.isEmpty else { return }
+
+        let fileName = URL(fileURLWithPath: filePath).lastPathComponent
+        viewModel.selectedScope = .directory(path: filePath, name: fileName)
+    }
+
+    private func copyDeprecationText(_ notice: Notice) {
+        let fileName = URL(string: notice.documentURL)?.lastPathComponent ?? "(Unknown)"
+        let line = notice.startingLineNumber > 0 ? ":\(notice.startingLineNumber)" : ""
+        let text = "\(fileName)\(line): \(notice.title)"
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
     }
 
     // MARK: - Toolbar
@@ -188,9 +241,7 @@ struct DeprecationsListView: View {
             ForEach(groupedByMessage, id: \.message) { group in
                 Section {
                     ForEach(group.items) { item in
-                        DeprecationRow(deprecation: item.notice)
-                            .tag(item.id)
-                            .onTapGesture(count: 2) { openInXcode(item.notice) }
+                        deprecationRowWithContextMenu(item: item)
                     }
                 } header: {
                     HStack(alignment: .top) {
@@ -254,6 +305,39 @@ struct DeprecationsListView: View {
         } catch {
             print("Failed to open in Xcode: \(error)")
         }
+    }
+
+    // MARK: - Scope Filtering
+
+    private func matchesScope(_ warning: Notice) -> Bool {
+        switch selectedScope {
+        case .all:
+            return true
+        case .packageDependencies:
+            return viewModel.isPackageDependency(warning)
+        case .project:
+            return !viewModel.isPackageDependency(warning)
+        case .directory(let path, _):
+            return getFilePath(from: warning.documentURL).hasPrefix(path)
+        }
+    }
+
+    private func getFilePath(from documentURL: String) -> String {
+        guard !documentURL.isEmpty else { return "" }
+
+        if documentURL.hasPrefix("file://") {
+            if let url = URL(string: documentURL) {
+                return url.path
+            }
+            if let decoded = documentURL.removingPercentEncoding,
+               let url = URL(string: decoded) {
+                return url.path
+            }
+            let pathPart = String(documentURL.dropFirst(7))
+            return URL(fileURLWithPath: pathPart).path
+        }
+
+        return URL(fileURLWithPath: documentURL).path
     }
 }
 

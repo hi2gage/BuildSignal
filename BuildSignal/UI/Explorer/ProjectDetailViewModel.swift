@@ -148,11 +148,12 @@ final class ProjectDetailViewModel: ObservableObject {
         let projectWarnings = warnings.filter { !isPackageDependency($0) && !$0.documentURL.isEmpty }
         guard !projectWarnings.isEmpty else { return [] }
 
+        // Count warnings per file (not directory)
         var pathCounts: [String: Int] = [:]
         for warning in projectWarnings {
-            let dirPath = getDirectoryPath(from: warning.documentURL)
-            guard !dirPath.isEmpty else { continue }
-            pathCounts[dirPath, default: 0] += 1
+            let filePath = getFilePath(from: warning.documentURL)
+            guard !filePath.isEmpty else { continue }
+            pathCounts[filePath, default: 0] += 1
         }
 
         guard !pathCounts.isEmpty else { return [] }
@@ -163,23 +164,25 @@ final class ProjectDetailViewModel: ObservableObject {
         class MutableNode {
             let name: String
             let path: String
+            let isFile: Bool
             var children: [String: MutableNode] = [:]
             var directCount: Int = 0
 
-            init(name: String, path: String) {
+            init(name: String, path: String, isFile: Bool = false) {
                 self.name = name
                 self.path = path
+                self.isFile = isFile
             }
 
             var totalCount: Int {
                 directCount + children.values.reduce(0) { $0 + $1.totalCount }
             }
 
-            func getOrCreateChild(name: String, path: String) -> MutableNode {
+            func getOrCreateChild(name: String, path: String, isFile: Bool = false) -> MutableNode {
                 if let existing = children[name] {
                     return existing
                 }
-                let node = MutableNode(name: name, path: path)
+                let node = MutableNode(name: name, path: path, isFile: isFile)
                 children[name] = node
                 return node
             }
@@ -216,9 +219,14 @@ final class ProjectDetailViewModel: ObservableObject {
 
             for (index, component) in components.enumerated() {
                 currentPath += "/" + component
-                currentNode = currentNode.getOrCreateChild(name: component, path: currentPath)
+                let isLastComponent = index == components.count - 1
+                currentNode = currentNode.getOrCreateChild(
+                    name: component,
+                    path: currentPath,
+                    isFile: isLastComponent
+                )
 
-                if index == components.count - 1 {
+                if isLastComponent {
                     currentNode.directCount += count
                 }
             }
@@ -229,24 +237,22 @@ final class ProjectDetailViewModel: ObservableObject {
             .sorted { $0.warningCount > $1.warningCount }
     }
 
-    private func getDirectoryPath(from documentURL: String) -> String {
+    private func getFilePath(from documentURL: String) -> String {
         guard !documentURL.isEmpty else { return "" }
 
         if documentURL.hasPrefix("file://") {
             if let url = URL(string: documentURL) {
-                return url.deletingLastPathComponent().path
+                return url.path
             }
             if let decoded = documentURL.removingPercentEncoding,
                let url = URL(string: decoded) {
-                return url.deletingLastPathComponent().path
+                return url.path
             }
             let pathPart = String(documentURL.dropFirst(7))
-            let url = URL(fileURLWithPath: pathPart)
-            return url.deletingLastPathComponent().path
+            return URL(fileURLWithPath: pathPart).path
         }
 
-        let url = URL(fileURLWithPath: documentURL)
-        return url.deletingLastPathComponent().path
+        return URL(fileURLWithPath: documentURL).path
     }
 
     private func findCommonPathPrefix(_ paths: [String]) -> String {
