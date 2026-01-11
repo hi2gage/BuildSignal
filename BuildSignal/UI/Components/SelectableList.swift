@@ -119,7 +119,11 @@ extension SelectionManager {
     var selectionBinding: Binding<Set<String>> {
         Binding(
             get: { self.selectedIDs },
-            set: { self.selectedIDs = $0 }
+            set: { newValue in
+                DispatchQueue.main.async {
+                    self.selectedIDs = newValue
+                }
+            }
         )
     }
 }

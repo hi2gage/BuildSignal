@@ -11,21 +11,16 @@ final class ProjectDetailViewModel: ObservableObject {
     enum ParsingState: Equatable {
         case idle
         case parsing
-        case parsed(json: String)
+        case parsed
         case error(String)
+    }
 
-        static func == (lhs: ParsingState, rhs: ParsingState) -> Bool {
-            switch (lhs, rhs) {
-            case (.idle, .idle), (.parsing, .parsing):
-                return true
-            case (.parsed(let a), .parsed(let b)):
-                return a == b
-            case (.error(let a), .error(let b)):
-                return a == b
-            default:
-                return false
-            }
-        }
+    // MARK: - Filter Type
+
+    /// Filter type for warnings vs deprecations display
+    enum FilterType {
+        case warnings
+        case deprecations
     }
 
     // MARK: - Published Properties
@@ -35,6 +30,7 @@ final class ProjectDetailViewModel: ObservableObject {
     @Published private(set) var warnings: [Notice] = []
     @Published private(set) var errors: [Notice] = []
     @Published var selectedScope: ScopeItem = .all
+    @Published var activeFilterType: FilterType = .warnings
 
     // MARK: - Properties
 
@@ -70,6 +66,31 @@ final class ProjectDetailViewModel: ObservableObject {
         warnings.filter { $0.type == .deprecatedWarning }.count
     }
 
+    /// Warnings filtered by active filter type (warnings vs deprecations)
+    private var activeFilteredWarnings: [Notice] {
+        switch activeFilterType {
+        case .warnings:
+            return warnings.filter { $0.type != .deprecatedWarning }
+        case .deprecations:
+            return warnings.filter { $0.type == .deprecatedWarning }
+        }
+    }
+
+    /// Project warning count filtered by active filter type
+    var activeProjectCount: Int {
+        activeFilteredWarnings.filter { !isPackageDependency($0) }.count
+    }
+
+    /// Package warning count filtered by active filter type
+    var activePackageCount: Int {
+        activeFilteredWarnings.filter { isPackageDependency($0) }.count
+    }
+
+    /// Total count filtered by active filter type
+    var activeTotalCount: Int {
+        activeFilteredWarnings.count
+    }
+
     var directoryTree: [DirectoryNode] {
         buildDirectoryTree()
     }
@@ -92,7 +113,7 @@ final class ProjectDetailViewModel: ObservableObject {
         )
         let viewModel = ProjectDetailViewModel(project: project)
         viewModel.warnings = warnings
-        viewModel.parsingState = .parsed(json: "{}")
+        viewModel.parsingState = .parsed
         return viewModel
     }
 
@@ -116,9 +137,7 @@ final class ProjectDetailViewModel: ObservableObject {
             self.warnings = await parserService.extractWarnings(from: buildStep)
             self.errors = await parserService.extractErrors(from: buildStep)
 
-            // Generate JSON for display
-            let jsonString = try await parserService.parseBuildLogAsJSONString(at: logURL)
-            parsingState = .parsed(json: jsonString)
+            parsingState = .parsed
 
         } catch {
             parsingState = .error(error.localizedDescription)
@@ -145,7 +164,7 @@ final class ProjectDetailViewModel: ObservableObject {
     }
 
     private func buildDirectoryTree() -> [DirectoryNode] {
-        let projectWarnings = warnings.filter { !isPackageDependency($0) && !$0.documentURL.isEmpty }
+        let projectWarnings = activeFilteredWarnings.filter { !isPackageDependency($0) && !$0.documentURL.isEmpty }
         guard !projectWarnings.isEmpty else { return [] }
 
         // Count warnings per file (not directory)

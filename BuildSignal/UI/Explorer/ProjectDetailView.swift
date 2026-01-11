@@ -1,25 +1,26 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// Detail content showing information about the selected project with tabs.
 /// Used by MainProjectView which manages the viewModel.
 struct ProjectDetailContent: View {
     @ObservedObject var viewModel: ProjectDetailViewModel
+    @State private var selectedTab: Tab = .warnings
+
+    enum Tab: Hashable {
+        case warnings
+        case deprecations
+        case details
+    }
 
     var body: some View {
-        TabView {
-            // Overview Tab
-            OverviewTabView(project: viewModel.project, viewModel: viewModel)
-                .tabItem {
-                    Label("Overview", systemImage: "info.circle")
-                }
-
+        TabView(selection: $selectedTab) {
             // Warnings List Tab (non-deprecations)
             WarningsListView(viewModel: viewModel, filterType: .warnings)
                 .tabItem {
                     Label("Warnings", systemImage: "exclamationmark.triangle")
                 }
                 .badge(viewModel.warningsOnlyCount)
+                .tag(Tab.warnings)
 
             // Deprecations Tab
             DeprecationsListView(viewModel: viewModel)
@@ -27,14 +28,27 @@ struct ProjectDetailContent: View {
                     Label("Deprecations", systemImage: "clock.arrow.circlepath")
                 }
                 .badge(viewModel.deprecationsCount)
+                .tag(Tab.deprecations)
 
-            // Raw JSON Tab
-            RawJSONTabView(viewModel: viewModel)
+            // Details Tab
+            DetailsTabView(project: viewModel.project, viewModel: viewModel)
                 .tabItem {
-                    Label("Raw JSON", systemImage: "curlybraces")
+                    Label("Details", systemImage: "info.circle")
                 }
+                .tag(Tab.details)
         }
         .padding()
+        .onChange(of: selectedTab) { _, newValue in
+            switch newValue {
+            case .warnings:
+                viewModel.activeFilterType = .warnings
+            case .deprecations:
+                viewModel.activeFilterType = .deprecations
+            case .details:
+                // Keep the current filter type for non-list tabs
+                break
+            }
+        }
     }
 }
 
@@ -58,9 +72,9 @@ struct ProjectDetailView: View {
     }
 }
 
-// MARK: - Overview Tab
+// MARK: - Details Tab
 
-private struct OverviewTabView: View {
+private struct DetailsTabView: View {
     let project: XcodeProject
     @ObservedObject var viewModel: ProjectDetailViewModel
 
@@ -290,120 +304,6 @@ private struct OverviewTabView: View {
                 .buttonStyle(.bordered)
             }
         }
-    }
-}
-
-// MARK: - Raw JSON Tab
-
-private struct RawJSONTabView: View {
-    @ObservedObject var viewModel: ProjectDetailViewModel
-
-    var body: some View {
-        VStack {
-            switch viewModel.parsingState {
-            case .idle:
-                idleView
-
-            case .parsing:
-                parsingView
-
-            case .parsed(let json):
-                jsonView(json)
-
-            case .error(let message):
-                errorView(message)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var idleView: some View {
-        ContentUnavailableView {
-            Label("No Build Selected", systemImage: "doc.text")
-        } description: {
-            Text("Select a project with build history to view the parsed log.")
-        }
-    }
-
-    private var parsingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.5)
-
-            Text("Parsing build log...")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
-            Text("This may take a moment for large builds")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-        }
-    }
-
-    private func jsonView(_ json: String) -> some View {
-        VStack(spacing: 0) {
-            // Toolbar
-            HStack {
-                Text("Parsed Build Log")
-                    .font(.headline)
-
-                Spacer()
-
-                Button {
-                    saveToFile(json)
-                } label: {
-                    Label("Save", systemImage: "square.and.arrow.down")
-                }
-                .buttonStyle(.bordered)
-
-                Button {
-                    copyToClipboard(json)
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                }
-                .buttonStyle(.bordered)
-
-                Text("\(json.count.formatted()) chars")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-
-            Divider()
-
-            // JSON content - use NSTextView wrapper for large content
-            JSONTextView(text: json)
-        }
-    }
-
-    private func saveToFile(_ json: String) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "build-log.json"
-
-        if panel.runModal() == .OK, let url = panel.url {
-            try? json.write(to: url, atomically: true, encoding: .utf8)
-        }
-    }
-
-    private func errorView(_ message: String) -> some View {
-        ContentUnavailableView {
-            Label("Parsing Failed", systemImage: "exclamationmark.triangle")
-        } description: {
-            Text(message)
-        } actions: {
-            Button("Retry") {
-                Task {
-                    await viewModel.parseLatestBuild()
-                }
-            }
-            .buttonStyle(.borderedProminent)
-        }
-    }
-
-    private func copyToClipboard(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
     }
 }
 

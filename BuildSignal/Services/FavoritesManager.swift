@@ -88,4 +88,10 @@ extension FavoritesManager {
     static func identifier(forDeprecationMessage message: String) -> String {
         "deprecation:\(message)"
     }
+
+    /// Creates a unique identifier for an individual deprecation occurrence.
+    /// Uses documentURL and line number for uniqueness.
+    static func identifier(forIndividualDeprecation documentURL: String, line: UInt64) -> String {
+        "deprecation-individual:\(documentURL):\(line)"
+    }
 }

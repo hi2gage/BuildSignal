@@ -52,14 +52,14 @@ private struct ScopeFilterSection: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            scopeButton(item: .all, count: viewModel.warnings.count)
+            scopeButton(item: .all, count: viewModel.activeTotalCount)
 
-            if viewModel.projectWarningCount > 0 {
-                scopeButton(item: .project, count: viewModel.projectWarningCount)
+            if viewModel.activeProjectCount > 0 {
+                scopeButton(item: .project, count: viewModel.activeProjectCount)
             }
 
-            if viewModel.packageWarningCount > 0 {
-                scopeButton(item: .packageDependencies, count: viewModel.packageWarningCount)
+            if viewModel.activePackageCount > 0 {
+                scopeButton(item: .packageDependencies, count: viewModel.activePackageCount)
             }
         }
         .padding(.horizontal, 8)

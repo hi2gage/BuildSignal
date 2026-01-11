@@ -71,6 +71,24 @@ struct WarningsListView: View {
             }
             .keyboardShortcut("j", modifiers: [.command, .shift])
             .hidden()
+
+            Button("Open in Xcode") {
+                openSelectedInXcode()
+            }
+            .keyboardShortcut("o", modifiers: .command)
+            .hidden()
+        }
+    }
+
+    private func openSelectedInXcode() {
+        guard let firstSelectedID = selectedIDs.first else { return }
+
+        let selectedWarning = filteredWarnings.enumerated()
+            .first { IdentifiedWarning($0.element, index: $0.offset).id == firstSelectedID }
+            .map { $0.element }
+
+        if let warning = selectedWarning {
+            NoticeUtilities.openInXcode(warning)
         }
     }
 
@@ -188,8 +206,9 @@ struct WarningsListView: View {
     @ViewBuilder
     private func warningRowWithContextMenu(item: IdentifiedWarning, showFile: Bool) -> some View {
         WarningRow(warning: item.warning, showFile: showFile)
+            .contentShape(Rectangle())
+            .onDoubleClick { NoticeUtilities.openInXcode(item.warning) }
             .tag(item.id)
-            .onTapGesture(count: 2) { NoticeUtilities.openInXcode(item.warning) }
             .noticeContextMenu(notice: item.warning, viewModel: viewModel)
     }
 
