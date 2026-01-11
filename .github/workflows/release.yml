@@ -12,6 +12,9 @@ jobs:
   build-and-release:
     runs-on: macos-14
 
+    env:
+      KEYCHAIN_PASSWORD: ${{ github.run_id }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,21 +28,83 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Build archive
+      - name: Install certificate
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Create temporary keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import certificate
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          echo -n "$APPLE_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Verify certificate
+          security find-identity -v $KEYCHAIN_PATH
+
+      - name: Build and archive
         run: |
           xcodebuild -scheme BuildSignal \
             -configuration Release \
             -archivePath ./BuildSignal.xcarchive \
-            archive
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Developer ID Application" \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
 
-      - name: Create distributable ZIP
+      - name: Export app
         run: |
           mkdir -p release
           cp -R "./BuildSignal.xcarchive/Products/Applications/BuildSignal.app" release/
+
+      - name: Notarize app
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cd release
+
+          # Create ZIP for notarization
+          ditto -c -k --keepParent BuildSignal.app BuildSignal-notarize.zip
+
+          # Submit for notarization
+          xcrun notarytool submit BuildSignal-notarize.zip \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          # Staple the ticket
+          xcrun stapler staple BuildSignal.app
+
+          # Verify
+          spctl -a -vvv -t install BuildSignal.app
+
+          # Clean up notarization zip
+          rm BuildSignal-notarize.zip
+
+      - name: Create distributable ZIP
+        run: |
           cd release
           zip -r BuildSignal-${{ steps.version.outputs.VERSION }}.zip BuildSignal.app
           shasum -a 256 BuildSignal-${{ steps.version.outputs.VERSION }}.zip > sha256.txt
           cat sha256.txt
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain $KEYCHAIN_PATH
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
