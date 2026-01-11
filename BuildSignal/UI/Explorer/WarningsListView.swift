@@ -234,7 +234,7 @@ struct WarningsListView: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 10)
-            .background(allSelected ? Color.accentColor : Color(nsColor: .windowBackgroundColor))
+            .background(allSelected ? Color.accentColor : Color.clear)
         }
         .buttonStyle(.plain)
     }
@@ -317,7 +317,7 @@ struct WarningsListView: View {
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
-            .background(allSelected ? Color.accentColor : Color(nsColor: .clear))
+            .background(allSelected ? Color.accentColor : Color.clear)
         }
         .buttonStyle(.plain)
     }
