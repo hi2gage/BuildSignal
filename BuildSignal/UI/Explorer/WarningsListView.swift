@@ -65,6 +65,25 @@ struct WarningsListView: View {
         .sheet(isPresented: $showingCategoryManager) {
             CategoryManagerView(categoryManager: categoryManager)
         }
+        .background {
+            Button("Reveal in Navigator") {
+                revealSelectedInNavigator()
+            }
+            .keyboardShortcut("j", modifiers: [.command, .shift])
+            .hidden()
+        }
+    }
+
+    private func revealSelectedInNavigator() {
+        guard let firstSelectedID = selectedIDs.first else { return }
+
+        let selectedWarning = filteredWarnings.enumerated()
+            .first { IdentifiedWarning($0.element, index: $0.offset).id == firstSelectedID }
+            .map { $0.element }
+
+        if let warning = selectedWarning {
+            revealInNavigator(warning: warning)
+        }
     }
 
     private func copySelectedWarningsText() -> [String] {
@@ -75,9 +94,7 @@ struct WarningsListView: View {
             .map { $0.element }
 
         let text = selectedWarnings.map { warning in
-            let file = extractFileName(from: warning.documentURL)
-            let line = warning.startingLineNumber > 0 ? ":\(warning.startingLineNumber)" : ""
-            return "\(file)\(line): \(warning.title)"
+            NoticeUtilities.formatNotice(warning, fallbackFileName: "(Project)")
         }.joined(separator: "\n")
 
         return [text]
@@ -172,44 +189,16 @@ struct WarningsListView: View {
     private func warningRowWithContextMenu(item: IdentifiedWarning, showFile: Bool) -> some View {
         WarningRow(warning: item.warning, showFile: showFile)
             .tag(item.id)
-            .onTapGesture(count: 2) { openInXcode(item.warning) }
-            .contextMenu {
-                Button {
-                    openInXcode(item.warning)
-                } label: {
-                    Label("Open in Xcode", systemImage: "hammer")
-                }
-
-                Button {
-                    revealInNavigator(warning: item.warning)
-                } label: {
-                    Label("Reveal in Navigator", systemImage: "sidebar.left")
-                }
-
-                Divider()
-
-                Button {
-                    copyWarningText(item.warning)
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                }
-            }
+            .onTapGesture(count: 2) { NoticeUtilities.openInXcode(item.warning) }
+            .noticeContextMenu(notice: item.warning, viewModel: viewModel)
     }
 
     private func revealInNavigator(warning: Notice) {
-        let filePath = getFilePath(from: warning.documentURL)
+        let filePath = NoticeUtilities.getFilePath(from: warning.documentURL)
         guard !filePath.isEmpty else { return }
 
         let fileName = URL(fileURLWithPath: filePath).lastPathComponent
         viewModel.selectedScope = .directory(path: filePath, name: fileName)
-    }
-
-    private func copyWarningText(_ warning: Notice) {
-        let file = extractFileName(from: warning.documentURL)
-        let line = warning.startingLineNumber > 0 ? ":\(warning.startingLineNumber)" : ""
-        let text = "\(file)\(line): \(warning.title)"
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
     }
 
     // MARK: - Grouped by Smart Category
@@ -257,8 +246,8 @@ struct WarningsListView: View {
             selectedIDs = ids
         } label: {
             HStack(alignment: .top, spacing: 8) {
-                Image(systemName: iconForType(type))
-                    .foregroundStyle(allSelected ? .white : colorForType(type))
+                Image(systemName: NoticeTypeHelpers.icon(for: type))
+                    .foregroundStyle(allSelected ? .white : NoticeTypeHelpers.color(for: type))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(message)
                         .font(.headline)
@@ -272,7 +261,7 @@ struct WarningsListView: View {
                     .foregroundStyle(allSelected ? .white : .primary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(allSelected ? Color.white.opacity(0.3) : colorForType(type).opacity(0.3))
+                    .background(allSelected ? Color.white.opacity(0.3) : NoticeTypeHelpers.color(for: type).opacity(0.3))
                     .cornerRadius(6)
             }
             .padding(.horizontal)
@@ -312,10 +301,10 @@ struct WarningsListView: View {
                 }
             } header: {
                 sectionHeader(
-                    icon: iconForType(group.type),
-                    title: labelForType(group.type),
+                    icon: NoticeTypeHelpers.icon(for: group.type),
+                    title: NoticeTypeHelpers.label(for: group.type),
                     count: group.identifiedWarnings.count,
-                    color: colorForType(group.type),
+                    color: NoticeTypeHelpers.color(for: group.type),
                     ids: Set(group.identifiedWarnings.map(\.id))
                 )
             }
@@ -415,46 +404,8 @@ struct WarningsListView: View {
         case .project:
             return !viewModel.isPackageDependency(warning)
         case .directory(let path, _):
-            return getFilePath(from: warning.documentURL).hasPrefix(path)
+            return NoticeUtilities.getFilePath(from: warning.documentURL).hasPrefix(path)
         }
-    }
-
-    private func getDirectoryPath(from documentURL: String) -> String {
-        guard !documentURL.isEmpty else { return "" }
-
-        if documentURL.hasPrefix("file://") {
-            if let url = URL(string: documentURL) {
-                return url.deletingLastPathComponent().path
-            }
-            if let decoded = documentURL.removingPercentEncoding,
-               let url = URL(string: decoded) {
-                return url.deletingLastPathComponent().path
-            }
-            let pathPart = String(documentURL.dropFirst(7))
-            let url = URL(fileURLWithPath: pathPart)
-            return url.deletingLastPathComponent().path
-        }
-
-        let url = URL(fileURLWithPath: documentURL)
-        return url.deletingLastPathComponent().path
-    }
-
-    private func getFilePath(from documentURL: String) -> String {
-        guard !documentURL.isEmpty else { return "" }
-
-        if documentURL.hasPrefix("file://") {
-            if let url = URL(string: documentURL) {
-                return url.path
-            }
-            if let decoded = documentURL.removingPercentEncoding,
-               let url = URL(string: decoded) {
-                return url.path
-            }
-            let pathPart = String(documentURL.dropFirst(7))
-            return URL(fileURLWithPath: pathPart).path
-        }
-
-        return URL(fileURLWithPath: documentURL).path
     }
 
     private var sortedSmartGroups: [(category: WarningCategory, identifiedWarnings: [IdentifiedWarning])] {
@@ -489,7 +440,7 @@ struct WarningsListView: View {
 
     private var sortedFileGroups: [(file: String, identifiedWarnings: [IdentifiedWarning])] {
         let grouped = Dictionary(grouping: filteredWarnings.enumerated().map { ($0.offset, $0.element) }) {
-            extractFileName(from: $0.1.documentURL)
+            NoticeUtilities.extractFileName(from: $0.1.documentURL, fallback: "(Project)")
         }
         return grouped
             .map { (file: $0.key, identifiedWarnings: $0.value.map { IdentifiedWarning($0.1, index: $0.0) }) }
@@ -515,88 +466,5 @@ struct WarningsListView: View {
             }
     }
 
-    // MARK: - Helpers
-
-    private func extractFileName(from documentURL: String) -> String {
-        guard !documentURL.isEmpty else { return "(Project)" }
-        let url = URL(string: documentURL) ?? URL(fileURLWithPath: documentURL)
-        return url.lastPathComponent
-    }
-
-    private func iconForType(_ type: NoticeType) -> String {
-        switch type {
-        case .swiftWarning, .clangWarning:
-            return "exclamationmark.triangle.fill"
-        case .deprecatedWarning:
-            return "clock.arrow.circlepath"
-        case .projectWarning:
-            return "folder.badge.questionmark"
-        case .analyzerWarning:
-            return "magnifyingglass"
-        case .interfaceBuilderWarning:
-            return "rectangle.on.rectangle"
-        default:
-            return "exclamationmark.circle"
-        }
-    }
-
-    private func colorForType(_ type: NoticeType) -> Color {
-        switch type {
-        case .swiftWarning, .clangWarning:
-            return .yellow
-        case .deprecatedWarning:
-            return .orange
-        case .projectWarning:
-            return .purple
-        case .analyzerWarning:
-            return .blue
-        default:
-            return .yellow
-        }
-    }
-
-    private func labelForType(_ type: NoticeType) -> String {
-        switch type {
-        case .swiftWarning: return "Swift Warnings"
-        case .clangWarning: return "C/C++ Warnings"
-        case .deprecatedWarning: return "Deprecations"
-        case .projectWarning: return "Project Warnings"
-        case .analyzerWarning: return "Analyzer Warnings"
-        case .interfaceBuilderWarning: return "Interface Builder"
-        case .note: return "Notes"
-        default: return type.rawValue
-        }
-    }
-
-    /// Opens the warning location in Xcode
-    private func openInXcode(_ warning: Notice) {
-        guard !warning.documentURL.isEmpty else { return }
-
-        // Parse the file URL
-        let filePath: String
-        if warning.documentURL.hasPrefix("file://") {
-            if let url = URL(string: warning.documentURL) {
-                filePath = url.path
-            } else if let decoded = warning.documentURL.removingPercentEncoding,
-                      let url = URL(string: decoded) {
-                filePath = url.path
-            } else {
-                filePath = String(warning.documentURL.dropFirst(7))
-            }
-        } else {
-            filePath = warning.documentURL
-        }
-
-        // Use xed to open file at specific line in Xcode
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/xed")
-        task.arguments = ["--line", "\(warning.startingLineNumber)", filePath]
-
-        do {
-            try task.run()
-        } catch {
-            print("Failed to open in Xcode: \(error)")
-        }
-    }
 }
 

@@ -105,6 +105,21 @@ struct DeprecationsListView: View {
         .onAppear {
             selectionManager.items = allIdentifiedItems
         }
+        .background {
+            Button("Reveal in Navigator") {
+                revealSelectedInNavigator()
+            }
+            .keyboardShortcut("j", modifiers: [.command, .shift])
+            .hidden()
+        }
+    }
+
+    private func revealSelectedInNavigator() {
+        guard let firstSelectedID = selectionManager.selectedIDs.first,
+              let selectedItem = allIdentifiedItems.first(where: { $0.id == firstSelectedID }) else {
+            return
+        }
+        revealInNavigator(notice: selectedItem.notice)
     }
 
     // MARK: - Deprecation Row with Context Menu
@@ -113,44 +128,16 @@ struct DeprecationsListView: View {
     private func deprecationRowWithContextMenu(item: IdentifiedDeprecation) -> some View {
         DeprecationRow(deprecation: item.notice)
             .tag(item.id)
-            .onTapGesture(count: 2) { openInXcode(item.notice) }
-            .contextMenu {
-                Button {
-                    openInXcode(item.notice)
-                } label: {
-                    Label("Open in Xcode", systemImage: "hammer")
-                }
-
-                Button {
-                    revealInNavigator(notice: item.notice)
-                } label: {
-                    Label("Reveal in Navigator", systemImage: "sidebar.left")
-                }
-
-                Divider()
-
-                Button {
-                    copyDeprecationText(item.notice)
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                }
-            }
+            .onTapGesture(count: 2) { NoticeUtilities.openInXcode(item.notice) }
+            .noticeContextMenu(notice: item.notice, viewModel: viewModel)
     }
 
     private func revealInNavigator(notice: Notice) {
-        let filePath = getFilePath(from: notice.documentURL)
+        let filePath = NoticeUtilities.getFilePath(from: notice.documentURL)
         guard !filePath.isEmpty else { return }
 
         let fileName = URL(fileURLWithPath: filePath).lastPathComponent
         viewModel.selectedScope = .directory(path: filePath, name: fileName)
-    }
-
-    private func copyDeprecationText(_ notice: Notice) {
-        let fileName = URL(string: notice.documentURL)?.lastPathComponent ?? "(Unknown)"
-        let line = notice.startingLineNumber > 0 ? ":\(notice.startingLineNumber)" : ""
-        let text = "\(fileName)\(line): \(notice.title)"
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
     }
 
     // MARK: - Toolbar
@@ -222,15 +209,46 @@ struct DeprecationsListView: View {
 
     private var noResultsState: some View {
         VStack {
-            ContentUnavailableView {
-                Label("No Results", systemImage: "magnifyingglass")
-            } description: {
-                Text("No deprecations match \"\(searchText)\"")
-            } actions: {
-                Button("Clear Search") {
-                    searchText = ""
+            Spacer()
+            if showFavoritesOnly && searchText.isEmpty {
+                // Starred filter is on but no starred items
+                ContentUnavailableView {
+                    Label("No Starred Deprecations", systemImage: "star")
+                } description: {
+                    Text("You haven't starred any deprecations yet.")
+                } actions: {
+                    Button("Show All") {
+                        showFavoritesOnly = false
+                    }
+                }
+            } else if showFavoritesOnly {
+                // Both filters active, no matches
+                ContentUnavailableView {
+                    Label("No Results", systemImage: "magnifyingglass")
+                } description: {
+                    Text("No starred deprecations match \"\(searchText)\"")
+                } actions: {
+                    Button("Show All Starred") {
+                        searchText = ""
+                    }
+                    Button("Show All Deprecations") {
+                        searchText = ""
+                        showFavoritesOnly = false
+                    }
+                }
+            } else {
+                // Just search filter, no matches
+                ContentUnavailableView {
+                    Label("No Results", systemImage: "magnifyingglass")
+                } description: {
+                    Text("No deprecations match \"\(searchText)\"")
+                } actions: {
+                    Button("Clear Search") {
+                        searchText = ""
+                    }
                 }
             }
+            Spacer()
         }
     }
 
@@ -277,36 +295,6 @@ struct DeprecationsListView: View {
         .listStyle(.inset)
     }
 
-    // MARK: - Helpers
-
-    private func openInXcode(_ notice: Notice) {
-        guard !notice.documentURL.isEmpty else { return }
-
-        let filePath: String
-        if notice.documentURL.hasPrefix("file://") {
-            if let url = URL(string: notice.documentURL) {
-                filePath = url.path
-            } else if let decoded = notice.documentURL.removingPercentEncoding,
-                      let url = URL(string: decoded) {
-                filePath = url.path
-            } else {
-                filePath = String(notice.documentURL.dropFirst(7))
-            }
-        } else {
-            filePath = notice.documentURL
-        }
-
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/xed")
-        task.arguments = ["--line", "\(notice.startingLineNumber)", filePath]
-
-        do {
-            try task.run()
-        } catch {
-            print("Failed to open in Xcode: \(error)")
-        }
-    }
-
     // MARK: - Scope Filtering
 
     private func matchesScope(_ warning: Notice) -> Bool {
@@ -318,52 +306,8 @@ struct DeprecationsListView: View {
         case .project:
             return !viewModel.isPackageDependency(warning)
         case .directory(let path, _):
-            return getFilePath(from: warning.documentURL).hasPrefix(path)
+            return NoticeUtilities.getFilePath(from: warning.documentURL).hasPrefix(path)
         }
-    }
-
-    private func getFilePath(from documentURL: String) -> String {
-        guard !documentURL.isEmpty else { return "" }
-
-        if documentURL.hasPrefix("file://") {
-            if let url = URL(string: documentURL) {
-                return url.path
-            }
-            if let decoded = documentURL.removingPercentEncoding,
-               let url = URL(string: decoded) {
-                return url.path
-            }
-            let pathPart = String(documentURL.dropFirst(7))
-            return URL(fileURLWithPath: pathPart).path
-        }
-
-        return URL(fileURLWithPath: documentURL).path
-    }
-}
-
-// MARK: - Supporting Types
-
-struct IdentifiedDeprecation: SelectableItem {
-    let notice: Notice
-    let index: Int
-
-    var id: String { "\(notice.documentURL):\(notice.startingLineNumber):\(index)" }
-
-    var copyableText: String {
-        let fileName = extractFileName(from: notice.documentURL)
-        let line = notice.startingLineNumber > 0 ? ":\(notice.startingLineNumber)" : ""
-        return "\(fileName)\(line): \(notice.title)"
-    }
-
-    init(_ notice: Notice, index: Int) {
-        self.notice = notice
-        self.index = index
-    }
-
-    private func extractFileName(from documentURL: String) -> String {
-        guard !documentURL.isEmpty else { return "(Unknown)" }
-        let url = URL(string: documentURL) ?? URL(fileURLWithPath: documentURL)
-        return url.lastPathComponent
     }
 }
 
