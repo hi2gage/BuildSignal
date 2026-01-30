@@ -51,10 +51,7 @@ Download the latest release from [GitHub Releases](https://github.com/hi2gage/Bu
 
 ## Development
 
-Built with:
-- [Swift 6.0](https://www.swift.org)
-- [SwiftUI](https://developer.apple.com/xcode/swiftui/)
-- [XCLogParser](https://github.com/MobileNativeFoundation/XCLogParser)
+Built with [XCLogParser](https://github.com/MobileNativeFoundation/XCLogParser) for parsing Xcode build logs.
 
 ### Building from Source
 
