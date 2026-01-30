@@ -23,8 +23,7 @@ Config/
 ├── Release.xcconfig            # Release configuration (committed)
 ├── Shared.xcconfig             # Shared settings (committed)
 ├── Secrets.xcconfig            # YOUR secrets (gitignored, NOT committed)
-├── Secrets.xcconfig.template   # Template for creating Secrets.xcconfig
-└── Local.xcconfig.template     # Optional local overrides template
+└── Secrets.xcconfig.template   # Template for creating Secrets.xcconfig
 ```
 
 ### Include Chain
@@ -46,7 +45,6 @@ Release.xcconfig
 - `Release.xcconfig` - Release configuration
 - `Shared.xcconfig` - Shared settings
 - `Secrets.xcconfig.template` - Template for secrets
-- `Local.xcconfig.template` - Template for local overrides
 
 🔒 **Never commit:**
 - `Secrets.xcconfig` - Contains your personal Team ID and Bundle ID
@@ -86,18 +84,6 @@ $(MARKETING_VERSION)
 $(DEVELOPMENT_TEAM)
 $(PRODUCT_NAME)
 ```
-
-## Local Overrides (Optional)
-
-For machine-specific settings that override even secrets:
-
-1. Copy `Local.xcconfig.template` to `Local.xcconfig`
-2. Edit with your custom settings
-3. Add to the top of `Shared.xcconfig`:
-   ```
-   #include? "Local.xcconfig"
-   ```
-   (The `?` makes it optional)
 
 ## Common Variables
 
