@@ -438,7 +438,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 1CFAC0652F2C8CAF0099B161 /* Debug.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = BuildSignal/BuildSignal.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
@@ -488,7 +487,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 1CFAC0672F2C8CAF0099B161 /* Release.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = BuildSignal/BuildSignal.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
