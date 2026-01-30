@@ -6,3 +6,6 @@ build/
 xcuserdata/
 DerivedData/
 *.xcarchive/
+
+# Xcode config files (personal settings)
+Config/*.xcconfig

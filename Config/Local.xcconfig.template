@@ -1,0 +1,11 @@
+// Local.xcconfig.template
+// Copy this to Local.xcconfig and customize for your machine
+// Local.xcconfig is gitignored for personal settings
+
+// Override team ID if different from shared config
+// DEVELOPMENT_TEAM = YOUR_TEAM_ID
+
+// Override bundle ID for personal builds
+// PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.BuildSignal
+
+// Add custom build settings here
