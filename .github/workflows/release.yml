@@ -53,6 +53,8 @@ jobs:
           security find-identity -v $KEYCHAIN_PATH
 
       - name: Build and archive
+        env:
+          DISABLE_SWIFTLINT: true
         run: |
           xcodebuild -scheme BuildSignal \
             -configuration Release \
@@ -60,8 +62,7 @@ jobs:
             archive \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Developer ID Application" \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            -skipPackagePluginValidation
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}"
 
       - name: Export app
         run: |
