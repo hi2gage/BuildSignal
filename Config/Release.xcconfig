@@ -3,6 +3,9 @@
 
 #include "Shared.xcconfig"
 
+// MARK: - Product Info
+PRODUCT_BUNDLE_DISPLAY_NAME = BuildSignal
+
 // MARK: - Code Signing
 CODE_SIGN_IDENTITY = Apple Development
 CODE_SIGN_STYLE = Automatic
