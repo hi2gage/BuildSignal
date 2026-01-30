@@ -5,7 +5,7 @@
 
 // MARK: - Product Info
 PRODUCT_NAME = BuildSignal
-MARKETING_VERSION = 0.0.12
+MARKETING_VERSION = 0.0.13
 CURRENT_PROJECT_VERSION = 1
 
 // MARK: - Deployment
