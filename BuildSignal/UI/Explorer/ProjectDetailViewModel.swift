@@ -163,8 +163,22 @@ final class ProjectDetailViewModel: ObservableObject {
                url.contains("/deriveddata/") && url.contains("/sourcepackages/")
     }
 
+    /// Checks if a warning is from a generated or system source (e.g., Swift macros, SDK headers).
+    func isGeneratedSource(_ warning: Notice) -> Bool {
+        let url = warning.documentURL.lowercased()
+        return url.contains("/var/folders/") ||
+               url.contains("swift-generated-sources") ||
+               url.contains("@__swiftmacro_") ||
+               url.contains("/library/developer/xcode/deriveddata/") ||
+               url.contains(".framework/headers/")
+    }
+
     private func buildDirectoryTree() -> [DirectoryNode] {
-        let projectWarnings = activeFilteredWarnings.filter { !isPackageDependency($0) && !$0.documentURL.isEmpty }
+        let projectWarnings = activeFilteredWarnings.filter {
+            !isPackageDependency($0) &&
+            !$0.documentURL.isEmpty &&
+            !isGeneratedSource($0)
+        }
         guard !projectWarnings.isEmpty else { return [] }
 
         // Count warnings per file (not directory)
@@ -242,7 +256,12 @@ final class ProjectDetailViewModel: ObservableObject {
             var currentPath = commonPrefix
 
             for (index, component) in components.enumerated() {
-                currentPath += "/" + component
+                // Avoid double slashes when commonPrefix is just "/"
+                if currentPath == "/" {
+                    currentPath = "/" + component
+                } else {
+                    currentPath += "/" + component
+                }
                 let isLastComponent = index == components.count - 1
                 currentNode = currentNode.getOrCreateChild(
                     name: component,
@@ -256,7 +275,7 @@ final class ProjectDetailViewModel: ObservableObject {
             }
         }
 
-        return rootContainer.children.values
+        var topLevelNodes = rootContainer.children.values
             .map { $0.toDirectoryNode() }
             .sorted {
                 if $0.warningCount != $1.warningCount {
@@ -264,6 +283,30 @@ final class ProjectDetailViewModel: ObservableObject {
                 }
                 return $0.name < $1.name
             }
+
+        // Collapse single-child chains to start at the first meaningful branching point
+        topLevelNodes = collapseSingleChildChains(topLevelNodes)
+
+        return topLevelNodes
+    }
+
+    /// Collapses single-child directory chains to show the first meaningful branching point.
+    /// For example: Users/g.halverson/Dev/project with one child each becomes just "project".
+    private func collapseSingleChildChains(_ nodes: [DirectoryNode]) -> [DirectoryNode] {
+        // If we have exactly one node and it has children, check if we should skip it
+        guard nodes.count == 1,
+              let singleNode = nodes.first,
+              !singleNode.children.isEmpty else {
+            return nodes
+        }
+
+        // If this single node has multiple children, this is our branching point - return it
+        if singleNode.children.count > 1 {
+            return nodes
+        }
+
+        // Single node with single child - recurse to collapse further
+        return collapseSingleChildChains(singleNode.children)
     }
 
     private func getFilePath(from documentURL: String) -> String {
