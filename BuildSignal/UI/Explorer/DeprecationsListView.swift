@@ -11,6 +11,7 @@ struct DeprecationsListView: View {
     @State private var searchText = ""
     @State private var showFavoritesOnly = false
     @State private var showHiddenItems = false
+    @State private var scrollPosition: String?
 
     private var selectedScope: ScopeItem { viewModel.selectedScope }
 
@@ -535,6 +536,7 @@ struct DeprecationsListView: View {
             }
         }
         .listStyle(.inset)
+        .scrollPosition(id: $scrollPosition)
     }
 
     // MARK: - Scope Filtering

@@ -213,7 +213,12 @@ final class ProjectDetailViewModel: ObservableObject {
                     path: path,
                     children: children.values
                         .map { $0.toDirectoryNode() }
-                        .sorted { $0.warningCount > $1.warningCount },
+                        .sorted {
+                            if $0.warningCount != $1.warningCount {
+                                return $0.warningCount > $1.warningCount
+                            }
+                            return $0.name < $1.name
+                        },
                     warningCount: totalCount
                 )
             }
@@ -253,7 +258,12 @@ final class ProjectDetailViewModel: ObservableObject {
 
         return rootContainer.children.values
             .map { $0.toDirectoryNode() }
-            .sorted { $0.warningCount > $1.warningCount }
+            .sorted {
+                if $0.warningCount != $1.warningCount {
+                    return $0.warningCount > $1.warningCount
+                }
+                return $0.name < $1.name
+            }
     }
 
     private func getFilePath(from documentURL: String) -> String {
