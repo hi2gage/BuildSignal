@@ -7,5 +7,5 @@ xcuserdata/
 DerivedData/
 *.xcarchive/
 
-# Xcode config files (personal settings)
-Config/*.xcconfig
+# Xcode config secrets (personal Team ID and Bundle ID)
+Config/Secrets.xcconfig

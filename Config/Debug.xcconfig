@@ -1,0 +1,19 @@
+// Debug.xcconfig
+// Configuration for Debug builds
+
+#include "Shared.xcconfig"
+
+// MARK: - Code Signing
+CODE_SIGN_IDENTITY = Apple Development
+CODE_SIGN_STYLE = Automatic
+
+// MARK: - Optimization
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+GCC_OPTIMIZATION_LEVEL = 0
+
+// MARK: - Debug Settings
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1
+
+// MARK: - Warnings
+ENABLE_TESTABILITY = YES

@@ -1,111 +1,136 @@
 # Xcode Configuration Files
 
-This directory contains `.xcconfig` template files for managing build settings in plain text.
+This directory contains `.xcconfig` files for managing build settings in plain text.
 
 ## ⚠️ First-Time Setup
 
-**Before using this project, you must create your local config files:**
+**Before building this project, you must create your secrets file:**
 
 ```bash
 cd Config
-cp Shared.xcconfig.template Shared.xcconfig
-cp Debug.xcconfig.template Debug.xcconfig
-cp Release.xcconfig.template Release.xcconfig
+cp Secrets.xcconfig.template Secrets.xcconfig
 ```
 
-Then edit `Shared.xcconfig` and replace:
+Then edit `Secrets.xcconfig` and replace:
 - `YOUR_TEAM_ID` with your Apple Developer Team ID
 - `com.yourcompany.BuildSignal` with your bundle identifier
 
-## Files
+## File Structure
 
-- **\*.xcconfig.template** - Template files (committed to git)
-- **\*.xcconfig** - Your personal config files (gitignored, NOT committed)
+```
+Config/
+├── Debug.xcconfig              # Debug configuration (committed)
+├── Release.xcconfig            # Release configuration (committed)
+├── Shared.xcconfig             # Shared settings (committed)
+├── Secrets.xcconfig            # YOUR secrets (gitignored, NOT committed)
+├── Secrets.xcconfig.template   # Secrets template (committed)
+└── Local.xcconfig.template     # Optional local overrides template
+```
 
-The actual `.xcconfig` files are gitignored to keep personal Team IDs and bundle identifiers private.
+### Include Chain
+
+```
+Debug.xcconfig
+    └─> Shared.xcconfig
+            └─> Secrets.xcconfig (your personal Team ID & Bundle ID)
+
+Release.xcconfig
+    └─> Shared.xcconfig
+            └─> Secrets.xcconfig (your personal Team ID & Bundle ID)
+```
+
+## What's Safe to Commit?
+
+✅ **Commit these:**
+- `Debug.xcconfig` - Debug configuration
+- `Release.xcconfig` - Release configuration
+- `Shared.xcconfig` - Shared settings
+- `*.xcconfig.template` - All template files
+
+🔒 **Never commit:**
+- `Secrets.xcconfig` - Contains your personal Team ID and Bundle ID
 
 ## Setup in Xcode
 
-### 1. Add Config Files to Xcode Project
+### 1. Create Secrets File
+
+Follow the "First-Time Setup" instructions above first.
+
+### 2. Add Config Files to Xcode Project
 
 1. Open `BuildSignal.xcodeproj` in Xcode
 2. Right-click on the project root in the navigator
 3. Select "Add Files to BuildSignal..."
 4. Navigate to the `Config` folder
-5. Select `Debug.xcconfig`, `Release.xcconfig`, and `Shared.xcconfig` (NOT the templates)
+5. Select `Debug.xcconfig`, `Release.xcconfig`, `Shared.xcconfig`, and `Secrets.xcconfig`
 6. **IMPORTANT**: Uncheck "Copy items if needed" and "Add to targets"
 7. Click "Add"
 
-### 2. Apply Configurations to Project
+### 3. Apply Configurations to Project
 
 1. Select the **BuildSignal project** in the navigator (blue icon)
 2. Select the **BuildSignal project** under PROJECT (not the target)
 3. Go to the **Info** tab
-4. Under "Configurations", expand Debug and Release
-5. For **Debug** configuration:
-   - Set project configuration to `Debug`
-   - Set target configuration to `Debug`
-6. For **Release** configuration:
-   - Set project configuration to `Release`
-   - Set target configuration to `Release`
+4. Under "Configurations", set:
+   - **Debug** → `Debug.xcconfig`
+   - **Release** → `Release.xcconfig`
 
-### 3. Using Variables
+### 4. Using Variables
 
-Once configured, you can reference variables in your project:
+Reference variables anywhere in your project:
 
-```swift
-// In Info.plist or build settings, reference like:
+```
 $(PRODUCT_BUNDLE_IDENTIFIER)
 $(MARKETING_VERSION)
-$(CURRENT_PROJECT_VERSION)
 $(DEVELOPMENT_TEAM)
+$(PRODUCT_NAME)
 ```
 
-### 4. Local Overrides (Optional)
+## Local Overrides (Optional)
 
-For machine-specific settings:
+For machine-specific settings that override even secrets:
 
 1. Copy `Local.xcconfig.template` to `Local.xcconfig`
 2. Edit with your custom settings
-3. Update Debug.xcconfig and Release.xcconfig to include:
+3. Add to the top of `Shared.xcconfig`:
    ```
    #include? "Local.xcconfig"
    ```
+   (The `?` makes it optional)
 
 ## Common Variables
 
 ```
-// Product Info
-PRODUCT_NAME
+// From Secrets.xcconfig
+DEVELOPMENT_TEAM
 PRODUCT_BUNDLE_IDENTIFIER
+
+// From Shared.xcconfig
+PRODUCT_NAME
 MARKETING_VERSION
 CURRENT_PROJECT_VERSION
+MACOSX_DEPLOYMENT_TARGET
+SWIFT_VERSION
 
-// Team & Signing
-DEVELOPMENT_TEAM
+// From Debug.xcconfig / Release.xcconfig
 CODE_SIGN_IDENTITY
 CODE_SIGN_STYLE
-
-// Deployment
-MACOSX_DEPLOYMENT_TARGET
-
-// Swift
-SWIFT_VERSION
 SWIFT_OPTIMIZATION_LEVEL
 ```
 
 ## For Contributors
 
-If you're contributing to this project:
+If you're contributing to this open source project:
 
-1. Never commit your personal `.xcconfig` files (they're gitignored)
-2. Only commit changes to `.xcconfig.template` files if updating shared settings
-3. Keep your Team ID and personal bundle identifiers private
+1. **Never commit** your `Secrets.xcconfig` file
+2. Only commit changes to the main config files (Debug, Release, Shared) if they affect everyone
+3. Keep your Team ID and bundle identifier private
 
 ## Benefits
 
-✅ Version control friendly (plain text)
+✅ Version control friendly - all configs except secrets are committed
 ✅ Easy to see what changed in diffs
-✅ Share settings across team members
-✅ Keep personal Team IDs private
-✅ Override settings per-machine without conflicts
+✅ Share team settings in git
+✅ Keep personal credentials private
+✅ Simple include hierarchy
+✅ No merge conflicts on personal settings

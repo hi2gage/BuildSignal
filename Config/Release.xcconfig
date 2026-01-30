@@ -1,0 +1,16 @@
+// Release.xcconfig
+// Configuration for Release builds
+
+#include "Shared.xcconfig"
+
+// MARK: - Code Signing
+CODE_SIGN_IDENTITY = Apple Development
+CODE_SIGN_STYLE = Automatic
+
+// MARK: - Optimization
+SWIFT_OPTIMIZATION_LEVEL = -O
+GCC_OPTIMIZATION_LEVEL = s
+
+// MARK: - Release Settings
+SWIFT_COMPILATION_MODE = wholemodule
+COPY_PHASE_STRIP = NO
