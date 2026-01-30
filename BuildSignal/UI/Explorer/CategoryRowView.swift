@@ -38,6 +38,7 @@ struct CategoryRowView: View {
     }
 }
 
+#if DEBUG
 #Preview("Built-in Category") {
     CategoryRowView(
         category: WarningCategory(
@@ -85,3 +86,4 @@ struct CategoryRowView: View {
     )
     .padding()
 }
+#endif

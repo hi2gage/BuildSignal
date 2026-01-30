@@ -67,6 +67,7 @@ struct WarningRow: View {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview("Swift Warning") {
     WarningRow(
         warning: Notice(
@@ -154,3 +155,4 @@ struct WarningRow: View {
     )
     .padding()
 }
+#endif
