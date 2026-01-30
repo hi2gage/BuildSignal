@@ -72,10 +72,31 @@ jobs:
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
             -skipPackagePluginValidation
 
+      - name: Create export options
+        run: |
+          cat > ExportOptions.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>developer-id</string>
+              <key>teamID</key>
+              <string>${{ secrets.APPLE_TEAM_ID }}</string>
+              <key>signingCertificate</key>
+              <string>Developer ID Application</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+          </dict>
+          </plist>
+          EOF
+
       - name: Export app
         run: |
-          mkdir -p release
-          cp -R "./BuildSignal.xcarchive/Products/Applications/BuildSignal.app" release/
+          xcodebuild -exportArchive \
+            -archivePath ./BuildSignal.xcarchive \
+            -exportPath ./release \
+            -exportOptionsPlist ./ExportOptions.plist
 
       - name: Notarize app
         env:
