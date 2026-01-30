@@ -27,6 +27,13 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: Create Secrets.xcconfig
+        run: |
+          cat > Config/Secrets.xcconfig << EOF
+          DEVELOPMENT_TEAM = ${{ secrets.APPLE_TEAM_ID }}
+          PRODUCT_BUNDLE_IDENTIFIER = com.draftroomstudios.BuildSignal
+          EOF
+
       - name: Extract version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
