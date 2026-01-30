@@ -6,6 +6,18 @@
   A macOS developer tool for analyzing and managing Xcode build warnings and deprecations.
 </div>
 
+## Installation
+
+### Homebrew (Recommended)
+
+```bash
+brew install hi2gage/hi2gage/buildsignal
+```
+
+### Manual Download
+
+Download the latest release from [GitHub Releases](https://github.com/hi2gage/BuildSignal/releases)
+
 ## Features
 
 - 📊 **Visual Build Analysis** - Parse Xcode build logs and visualize warnings
@@ -24,18 +36,6 @@
 <img src=".github/images/deprecations-view.png" alt="Deprecations View" width="600">
 
 *Track deprecated API usage across your codebase*
-
-## Installation
-
-### Homebrew (Recommended)
-
-```bash
-brew install hi2gage/hi2gage/buildsignal
-```
-
-### Manual Download
-
-Download the latest release from [GitHub Releases](https://github.com/hi2gage/BuildSignal/releases)
 
 ## Usage
 
