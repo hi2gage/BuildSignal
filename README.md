@@ -1,6 +1,10 @@
-# BuildSignal
+<div align="center">
+  <img src=".github/images/app-icon.png" alt="BuildSignal Icon" width="128" height="128">
 
-A macOS developer tool for analyzing and managing Xcode build warnings and deprecations.
+  # BuildSignal
+
+  A macOS developer tool for analyzing and managing Xcode build warnings and deprecations.
+</div>
 
 ## Features
 
@@ -10,6 +14,16 @@ A macOS developer tool for analyzing and managing Xcode build warnings and depre
 - 📁 **Project Organization** - Browse warnings by directory structure
 - ⭐ **Favorites & Hidden** - Mark important warnings or hide resolved issues
 - 🎯 **Category Management** - Create custom warning categories with regex patterns
+
+## Screenshots
+
+<img src=".github/images/warnings-view.png" alt="Warnings View" width="600">
+
+*Organize and filter Swift 6 concurrency warnings by directory and file*
+
+<img src=".github/images/deprecations-view.png" alt="Deprecations View" width="600">
+
+*Track deprecated API usage across your codebase*
 
 ## Installation
 
