@@ -39,7 +39,7 @@ Download the latest release from [GitHub Releases](https://github.com/hi2gage/Bu
 
 ## Usage
 
-1. **Build your project in Xcode** - Perform a full build (⌘B) to generate build logs in DerivedData
+1. **Build your project in Xcode** - Perform a full build to generate build logs in DerivedData
 2. **Open BuildSignal**
 3. **Browse DerivedData** to automatically detect recent builds, or drag a build log JSON file
 4. **Analyze warnings** by category, file, or custom filters
