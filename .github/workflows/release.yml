@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-and-release:
-    runs-on: macos-14
+    runs-on: macos-15
 
     env:
       KEYCHAIN_PASSWORD: ${{ github.run_id }}
