@@ -23,7 +23,7 @@ Config/
 ├── Release.xcconfig            # Release configuration (committed)
 ├── Shared.xcconfig             # Shared settings (committed)
 ├── Secrets.xcconfig            # YOUR secrets (gitignored, NOT committed)
-├── Secrets.xcconfig.template   # Secrets template (committed)
+├── Secrets.xcconfig.template   # Template for creating Secrets.xcconfig
 └── Local.xcconfig.template     # Optional local overrides template
 ```
 
@@ -45,7 +45,8 @@ Release.xcconfig
 - `Debug.xcconfig` - Debug configuration
 - `Release.xcconfig` - Release configuration
 - `Shared.xcconfig` - Shared settings
-- `*.xcconfig.template` - All template files
+- `Secrets.xcconfig.template` - Template for secrets
+- `Local.xcconfig.template` - Template for local overrides
 
 🔒 **Never commit:**
 - `Secrets.xcconfig` - Contains your personal Team ID and Bundle ID
