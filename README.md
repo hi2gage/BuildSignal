@@ -39,10 +39,11 @@ Download the latest release from [GitHub Releases](https://github.com/hi2gage/Bu
 
 ## Usage
 
-1. **Open BuildSignal**
-2. **Browse DerivedData** or drag a build log JSON file
-3. **Analyze warnings** by category, file, or custom filters
-4. **Manage technical debt** by favoriting or hiding issues
+1. **Build your project in Xcode** - Perform a full build (⌘B) to generate build logs in DerivedData
+2. **Open BuildSignal**
+3. **Browse DerivedData** to automatically detect recent builds, or drag a build log JSON file
+4. **Analyze warnings** by category, file, or custom filters
+5. **Manage technical debt** by favoriting or hiding issues
 
 ## Requirements
 
