@@ -34,6 +34,7 @@
 		1C1B772D2F122C0100D185F2 /* BuildSignalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BuildSignalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1C1B77372F122C0100D185F2 /* BuildSignalUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BuildSignalUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1C63CF0F2F2CABCE00101003 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		1C63CF122F2CABCF00101005 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		1CFAC0652F2C8CAF0099B161 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		1CFAC0662F2C8CAF0099B161 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		1CFAC0672F2C8CAF0099B161 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };

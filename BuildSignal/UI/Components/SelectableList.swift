@@ -88,6 +88,10 @@ final class SelectionManager<Item: SelectableItem>: ObservableObject {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
     }
+
+    deinit {
+        // Explicit deinit to work around Swift 6 compiler crash
+    }
 }
 
 // MARK: - Selectable List View Modifier
