@@ -52,9 +52,9 @@ Download the latest release from [GitHub Releases](https://github.com/hi2gage/Bu
 ## Development
 
 Built with:
-- Swift 6.0
-- SwiftUI
-- XCLogParser
+- [Swift 6.0](https://www.swift.org)
+- [SwiftUI](https://developer.apple.com/xcode/swiftui/)
+- [XCLogParser](https://github.com/MobileNativeFoundation/XCLogParser)
 
 ### Building from Source
 
@@ -68,7 +68,7 @@ Configuration uses `.xcconfig` files. Copy `Config/Secrets.xcconfig.template` to
 
 ## License
 
-[Add your license here - MIT recommended]
+MIT License - see [LICENSE](LICENSE) for details
 
 ## Author
 
