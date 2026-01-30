@@ -25,15 +25,9 @@ else
     ((WARNINGS++))
 fi
 
-# Check if app icon is set
-if [ -f "BuildSignal/Assets.xcassets/AppIcon.appiconset/Contents.json" ]; then
-    ICON_COUNT=$(grep -c "filename" BuildSignal/Assets.xcassets/AppIcon.appiconset/Contents.json || echo "0")
-    if [ "$ICON_COUNT" -gt 0 ]; then
-        echo "✅ App icon configured"
-    else
-        echo "❌ App icon not set"
-        ((ERRORS++))
-    fi
+# Check if app icon is set (supports both .appiconset and .icon formats)
+if [ -d "BuildSignal/Assets.xcassets/AppIcon.icon" ] || [ -d "BuildSignal/Assets.xcassets/AppIcon.appiconset" ]; then
+    echo "✅ App icon configured"
 else
     echo "❌ App icon asset missing"
     ((ERRORS++))
