@@ -5,7 +5,7 @@
 
 // MARK: - Product Info
 PRODUCT_NAME = BuildSignal
-MARKETING_VERSION = 0.0.8
+MARKETING_VERSION = 0.0.9
 CURRENT_PROJECT_VERSION = 1
 
 // MARK: - Deployment
@@ -16,3 +16,6 @@ SWIFT_VERSION = 6.0
 
 // MARK: - Info.plist
 INFOPLIST_FILE = BuildSignal/Info.plist
+
+// MARK: - App Icon
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
