@@ -1,5 +1,5 @@
 {
-  "originHash" : "358b29e99ad3ec91d540e40d8b55bd34ee5a534bb0d0d0c054121cd70bad0cd3",
+  "originHash" : "6e8a833552daec290a1367f8ff897f9045d5aa8d8c5585140a00e3b7bf05e154",
   "pins" : [
     {
       "identity" : "cryptoswift",
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
-        "version" : "1.7.0"
+        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+        "version" : "1.8.2"
       }
     },
     {
@@ -51,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/lukepistrol/SwiftLintPlugin",
       "state" : {
-        "revision" : "17c132fe0ce3b4324dc23b575636b223483207b3",
-        "version" : "0.63.0"
+        "revision" : "a3877065a7d72ee40e1fa64e13b9e33e846c667c",
+        "version" : "0.63.1"
       }
     },
     {
@@ -67,10 +67,10 @@
     {
       "identity" : "xclogparser",
       "kind" : "remoteSourceControl",
-      "location" : "git@github.com:MobileNativeFoundation/XCLogParser.git",
+      "location" : "https://github.com/MobileNativeFoundation/XCLogParser.git",
       "state" : {
-        "revision" : "5c5b5bdc292ec374273b02bfd70395ef9d193755",
-        "version" : "0.2.45"
+        "revision" : "0b908a0476f3ef03538455442eff39d8afe8cc10",
+        "version" : "0.2.48"
       }
     }
   ],
