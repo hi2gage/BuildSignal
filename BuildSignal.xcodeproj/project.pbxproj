@@ -675,7 +675,7 @@
 /* Begin XCRemoteSwiftPackageReference section */
 		1C1B774A2F122CD900D185F2 /* XCRemoteSwiftPackageReference "XCLogParser" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:MobileNativeFoundation/XCLogParser.git";
+			repositoryURL = "https://github.com/MobileNativeFoundation/XCLogParser.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.2.15;
