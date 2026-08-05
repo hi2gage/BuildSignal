@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure git to use HTTPS for GitHub
         run: git config --global url."https://github.com/".insteadOf "git@github.com:"
@@ -141,7 +141,7 @@ jobs:
           fi
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             release/BuildSignal-${{ steps.version.outputs.VERSION }}.zip
@@ -156,7 +156,7 @@ jobs:
           echo "SHA256=$SHA" >> $GITHUB_OUTPUT
 
       - name: Update Homebrew Cask
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           repository: hi2gage/homebrew-hi2gage
