@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
-        "version" : "1.7.0"
+        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+        "version" : "1.8.2"
       }
     },
     {
@@ -67,10 +67,10 @@
     {
       "identity" : "xclogparser",
       "kind" : "remoteSourceControl",
-      "location" : "git@github.com:MobileNativeFoundation/XCLogParser.git",
+      "location" : "https://github.com/MobileNativeFoundation/XCLogParser.git",
       "state" : {
-        "revision" : "5c5b5bdc292ec374273b02bfd70395ef9d193755",
-        "version" : "0.2.45"
+        "revision" : "0b908a0476f3ef03538455442eff39d8afe8cc10",
+        "version" : "0.2.48"
       }
     }
   ],
